@@ -5,9 +5,11 @@ AM_MAKEFLAGS = -j$(MAKE_PROCESS)
 AM_CPPFLAGS  = -lpthread
 
 MODULES = \
-	  rpadc_fifo
+	  rpadc_fifo \
+	  rpadc_dma
 
 TEST_EXAMPLES = \
+	  rpadc_dma_test \
 	  rpadc_fifo_test \
 	  axi_write \
 	  axi_read

@@ -18,11 +18,15 @@ Makefile.in
 
 /build*
 
+/toolchain
+
 vivado_project/
+/fpga/device-tree-*
+
 .cache/
 .hw/
 .xpr
 
-/home/andrea/devel/rfx/anacleto/build/download
-/home/andrea/devel/rfx/anacleto/build/toolchain
+/downloads
+/home/mdsplus/devel/anacleto/toolchain
 /linux

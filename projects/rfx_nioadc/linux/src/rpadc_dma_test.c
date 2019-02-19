@@ -3,7 +3,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include "rpadc_fifo.h"
+#include "rpadc_dma.h"
 #include "axi_reg.h"
 
 #define BUF_SIZE 10240
@@ -118,9 +118,10 @@ int main(int argc, char **argv) {
     printf("reg: %p  dec: %d\n",dec_reg,dec_reg->dec);
 */
 
-     printf("aperto CICCIO\n");
+     printf("aperto \n");
+
      
-    status = ioctl(fd, RFX_RPADC_STOP, 0);
+   // status = ioctl(fd, RFX_RPADC_STOP, 0);
     sleep(1);
      
 //    inConfig.mode = EVENT_STREAMING;
@@ -145,15 +146,15 @@ int main(int argc, char **argv) {
     
     
     //status = ioctl(fd, RFX_RPADC_FIFO_INT_HALF_SIZE, 0);
-    status = ioctl(fd, RFX_RPADC_FIFO_INT_FIRST_SAMPLE, 0);
-    usleep(10);
+    //status = ioctl(fd, RFX_RPADC_FIFO_INT_FIRST_SAMPLE, 0);
+    //usleep(10);
     status = ioctl(fd, RFX_RPADC_CLEAR, 0);
     usleep(10);
     status = ioctl(fd, RFX_RPADC_RESET, 0);
     usleep(10);
     status = ioctl(fd, RFX_RPADC_ARM, 0);
 
-    usleep(10);
+    sleep(1);
     status = ioctl(fd, RFX_RPADC_TRIGGER, 0);
     //status = ioctl(fd, RFX_RPADC_FIFO_INT_FIRST_SAMPLE, 0);
 
@@ -190,17 +191,21 @@ int main(int argc, char **argv) {
 	}
         for(int j=0; j<rb; j+=sizeof(u_int32_t)) {
             plot_ascii_ab(*((u_int32_t *)&data[j]),stdout);
+	    i++;
+	    if(i%1024 == 0)
+		printf("BLOCK STEP\n");
         }
-        i += rb/sizeof(int);
+//        i += rb/sizeof(int);
 	
-	int newFrames = (i - frameCount *(PRE_SAMPLES+POST_SAMPLES))/(PRE_SAMPLES+POST_SAMPLES);
-	//printf("i: %d\tnewFrames: %d\tframeCount: %d\n", i, frameCount, newFrames);
+/*	int newFrames = (i - frameCount *(PRE_SAMPLES+POST_SAMPLES))/(PRE_SAMPLES+POST_SAMPLES);
 	for(int j = 0; j < newFrames; j++)
 	{
 	    status = ioctl(fd, RFX_RPADC_LAST_TIME, &currTime);
 	    printf("TRIGGER TIME: %d\n", currTime);
 	}
 	frameCount += newFrames;
+*/
+      
     }
 
 
@@ -247,6 +252,9 @@ int main(int argc, char **argv) {
     //    fclose(file_py);
     //    free(data);
 
+    status = ioctl(fd, RFX_RPADC_STOP, 0);
+
+    sleep(1);
 
     // CLOSE FILE //
     close(fd);

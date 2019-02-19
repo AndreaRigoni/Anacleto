@@ -1,3 +1,4 @@
 obj    = $(builddir)
 src    = $(srcdir)
 obj-m  += rpadc_fifo.o
+obj-m  += rpadc_dma.o
