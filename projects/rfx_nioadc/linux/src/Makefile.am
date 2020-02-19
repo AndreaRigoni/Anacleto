@@ -6,10 +6,13 @@ AM_CPPFLAGS  = -lpthread
 
 MODULES = \
 	  rpadc_fifo \
-	  rpadc_dma
+	  rpadc_dma \
+	  rpadc_dma_auto\
+	  rpadc_fifo_auto
 
 TEST_EXAMPLES = \
 	  rpadc_dma_test \
+	  rpadc_dma_auto_test \
 	  rpadc_fifo_test \
 	  axi_write \
 	  axi_read
