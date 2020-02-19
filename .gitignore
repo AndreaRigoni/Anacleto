@@ -17,15 +17,17 @@ Makefile.in
 /stamp-h1
 
 /build*
-
+/linux
 /toolchain
+*.bkp*
+
+/projects/*/edit/
 
 vivado_project/
-/fpga/device-tree-*
-
 .cache/
 .hw/
 .xpr
 
 /downloads
+/home/mdsplus/devel/anacleto/toolchain
 /linux
