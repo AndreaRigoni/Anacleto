@@ -771,6 +771,7 @@ static int $$DEVICE_NAME_L$$_remove(struct platform_device *pdev)
 static const struct of_device_id $$DEVICE_NAME_L$$_of_ids[] = {
 { .compatible = "xlnx,axi-dma-test-1.00.a",},
 { .compatible = "xlnx,axi-cfg-register-1.0",},
+{ .compatible = "xlnx,axi-sts-register-1.0",},
 { .compatible = "xlnx,axi-fifo-mm-s-4.1",},
 {}
 };

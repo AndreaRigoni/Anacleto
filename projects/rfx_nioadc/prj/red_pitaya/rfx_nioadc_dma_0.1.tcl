@@ -428,9 +428,9 @@ namespace upvar ::tclapp::socdev::makeutils core_env    core_env
  set files [list \
   "[file normalize $make_env(srcdir)/src/resampler.vhdl]"\
   "[file normalize $make_env(srcdir)/src/trarec_dma.vhdl]"\
+  "[file normalize $make_env(srcdir)/src/timing_highway.vhdl]"\
   "[file normalize $project_env(dir_prj)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/red_pitaya_ps_1.bd]"\
   "[file normalize $project_env(dir_prj)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/hdl/red_pitaya_ps_1_wrapper.vhd]"\
-  "[file normalize $make_env(srcdir)/src/timing_highway.vhdl]"\
   "[file normalize $make_env(srcdir)/src/frequency_counter.v]"\
   "[file normalize $make_env(srcdir)/src/vi_rms.v]"\
   "[file normalize $make_env(srcdir)/src/resampler_tb.vhdl]"\

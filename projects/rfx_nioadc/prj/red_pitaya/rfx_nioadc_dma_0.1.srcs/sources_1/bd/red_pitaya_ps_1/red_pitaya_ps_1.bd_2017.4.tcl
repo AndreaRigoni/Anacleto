@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# resampler, trarec
+# highway, resampler, trarec
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -136,6 +136,7 @@ pavel-demin:user:axis_red_pitaya_adc:2.0\
 xilinx.com:ip:blk_mem_gen:8.4\
 pavel-demin:user:axi_cfg_register:1.0\
 xilinx.com:ip:axi_fifo_mm_s:4.1\
+pavel-demin:user:axi_sts_register:1.0\
 xilinx.com:ip:processing_system7:5.5\
 xilinx.com:ip:proc_sys_reset:5.0\
 "
@@ -163,6 +164,7 @@ xilinx.com:ip:proc_sys_reset:5.0\
 set bCheckModules 1
 if { $bCheckModules == 1 } {
    set list_check_mods "\ 
+highway\
 resampler\
 trarec\
 "
@@ -294,7 +296,7 @@ proc create_root_design { parentCell } {
    CONFIG.Use_Byte_Write_Enable {false} \
    CONFIG.Use_RSTA_Pin {false} \
    CONFIG.Use_RSTB_Pin {false} \
-   CONFIG.Write_Depth_A {8192} \
+   CONFIG.Write_Depth_A {16384} \
    CONFIG.Write_Width_A {32} \
    CONFIG.Write_Width_B {32} \
    CONFIG.use_bram_block {Stand_Alone} \
@@ -316,7 +318,7 @@ proc create_root_design { parentCell } {
   set_property -dict [ list \
    CONFIG.C_AXIS_TUSER_WIDTH {4} \
    CONFIG.C_DATA_INTERFACE_TYPE {1} \
-   CONFIG.C_RX_FIFO_DEPTH {16384} \
+   CONFIG.C_RX_FIFO_DEPTH {32768} \
    CONFIG.C_RX_FIFO_PE_THRESHOLD {2} \
    CONFIG.C_RX_FIFO_PF_THRESHOLD {507} \
    CONFIG.C_S_AXI4_DATA_WIDTH {32} \
@@ -336,6 +338,30 @@ proc create_root_design { parentCell } {
    CONFIG.NUM_WRITE_OUTSTANDING {1} \
  ] [get_bd_intf_pins /decimator_register/S_AXI]
 
+  # Create instance: event_code, and set properties
+  set event_code [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_sts_register:1.0 event_code ]
+  set_property -dict [ list \
+   CONFIG.STS_DATA_WIDTH {32} \
+ ] $event_code
+
+  set_property -dict [ list \
+   CONFIG.DATA_WIDTH {32} \
+   CONFIG.ADDR_WIDTH {32} \
+   CONFIG.NUM_READ_OUTSTANDING {1} \
+   CONFIG.NUM_WRITE_OUTSTANDING {1} \
+ ] [get_bd_intf_pins /event_code/S_AXI]
+
+  # Create instance: highway_0, and set properties
+  set block_name highway
+  set block_cell_name highway_0
+  if { [catch {set highway_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_msg_id "BD_TCL-105" "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $highway_0 eq "" } {
+     catch {common::send_msg_id "BD_TCL-106" "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+  
   # Create instance: mode_register, and set properties
   set mode_register [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 mode_register ]
   set_property -dict [ list \
@@ -829,6 +855,14 @@ proc create_root_design { parentCell } {
    CONFIG.TDATA_NUM_BYTES {4} \
  ] [get_bd_intf_pins /trarec_0/t_axis]
 
+  # Create instance: trig_event_code, and set properties
+  set trig_event_code [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 trig_event_code ]
+
+  set_property -dict [ list \
+   CONFIG.NUM_READ_OUTSTANDING {1} \
+   CONFIG.NUM_WRITE_OUTSTANDING {1} \
+ ] [get_bd_intf_pins /trig_event_code/S_AXI]
+
   # Create interface connections
   connect_bd_intf_net -intf_net axis_decimator_0_M_AXIS [get_bd_intf_pins axis_decimator_0/M_AXIS] [get_bd_intf_pins trarec_0/s_axis]
   connect_bd_intf_net -intf_net axis_packetizer_0_M_AXIS [get_bd_intf_pins axis_packetizer_0/M_AXIS] [get_bd_intf_pins time_fifo/AXI_STR_RXD]
@@ -847,6 +881,8 @@ proc create_root_design { parentCell } {
   connect_bd_intf_net -intf_net red_pitaya_ps_axi_periph_M07_AXI [get_bd_intf_pins red_pitaya_ps_axi_periph/M07_AXI] [get_bd_intf_pins time_fifo/S_AXI_FULL]
   connect_bd_intf_net -intf_net red_pitaya_ps_axi_periph_M08_AXI [get_bd_intf_pins post_register/S_AXI] [get_bd_intf_pins red_pitaya_ps_axi_periph/M08_AXI]
   connect_bd_intf_net -intf_net red_pitaya_ps_axi_periph_M09_AXI [get_bd_intf_pins data_fifo/S_AXI_FULL] [get_bd_intf_pins red_pitaya_ps_axi_periph/M09_AXI]
+  connect_bd_intf_net -intf_net red_pitaya_ps_axi_periph_M10_AXI [get_bd_intf_pins event_code/S_AXI] [get_bd_intf_pins red_pitaya_ps_axi_periph/M10_AXI]
+  connect_bd_intf_net -intf_net red_pitaya_ps_axi_periph_M11_AXI [get_bd_intf_pins red_pitaya_ps_axi_periph/M11_AXI] [get_bd_intf_pins trig_event_code/S_AXI]
   connect_bd_intf_net -intf_net resampler_0_m_axis [get_bd_intf_pins axis_decimator_0/S_AXIS] [get_bd_intf_pins resampler_0/m_axis]
   connect_bd_intf_net -intf_net trarec_0_m_axis [get_bd_intf_pins axis_packetizer_1/S_AXIS] [get_bd_intf_pins trarec_0/m_axis]
   connect_bd_intf_net -intf_net trarec_0_t_axis [get_bd_intf_pins axis_packetizer_0/S_AXIS] [get_bd_intf_pins trarec_0/t_axis]
@@ -854,21 +890,24 @@ proc create_root_design { parentCell } {
   # Create port connections
   connect_bd_net -net adc_dat_a_0_1 [get_bd_ports adc_dat_a] [get_bd_pins axis_red_pitaya_adc_0/adc_dat_a]
   connect_bd_net -net adc_dat_b_0_1 [get_bd_ports adc_dat_b] [get_bd_pins axis_red_pitaya_adc_0/adc_dat_b]
-  connect_bd_net -net axi_cfg_register_0_cfg_data [get_bd_pins mode_register/cfg_data] [get_bd_pins resampler_0/mode_cfg] [get_bd_pins trarec_0/mode_cfg]
+  connect_bd_net -net axi_cfg_register_0_cfg_data [get_bd_pins highway_0/mode_cfg] [get_bd_pins mode_register/cfg_data] [get_bd_pins resampler_0/mode_cfg] [get_bd_pins trarec_0/mode_cfg]
   connect_bd_net -net blk_mem_gen_0_douta [get_bd_pins blk_mem_gen_0/douta] [get_bd_pins trarec_0/cbuf_douta]
   connect_bd_net -net blk_mem_gen_0_doutb [get_bd_pins blk_mem_gen_0/doutb] [get_bd_pins trarec_0/cbuf_doutb]
   connect_bd_net -net command_register_cfg_data [get_bd_pins command_register/cfg_data] [get_bd_pins trarec_0/command_cfg]
   connect_bd_net -net data_fifo_interrupt [get_bd_pins data_fifo/interrupt] [get_bd_pins red_pitaya_ps/IRQ_F2P]
   connect_bd_net -net decimator_cfg_data [get_bd_pins axis_decimator_0/cfg_data] [get_bd_pins decimator_register/cfg_data]
-  connect_bd_net -net ext_clk_0_1 [get_bd_ports ext_clk] [get_bd_pins resampler_0/ext_clk]
+  connect_bd_net -net ext_clk_1 [get_bd_ports ext_clk] [get_bd_pins highway_0/highway_clk]
+  connect_bd_net -net highway_0_out_clk [get_bd_pins highway_0/out_clk] [get_bd_pins resampler_0/ext_clk]
+  connect_bd_net -net highway_0_out_event_code [get_bd_pins event_code/sts_data] [get_bd_pins highway_0/out_event_code]
+  connect_bd_net -net highway_0_out_trig [get_bd_pins highway_0/out_trig] [get_bd_pins trarec_0/async_trigger_in]
   connect_bd_net -net packetizer_cfg_data [get_bd_pins axis_packetizer_0/cfg_data] [get_bd_pins axis_packetizer_1/cfg_data] [get_bd_pins packetizer/cfg_data]
   connect_bd_net -net post_register_cfg_data [get_bd_pins post_register/cfg_data] [get_bd_pins trarec_0/post_cfg]
   connect_bd_net -net pre_post_register_cfg_data [get_bd_pins pre_register/cfg_data] [get_bd_pins trarec_0/pre_cfg]
-  connect_bd_net -net red_pitaya_ps_FCLK_CLK0 [get_bd_pins axis_decimator_0/aclk] [get_bd_pins axis_packetizer_0/aclk] [get_bd_pins axis_packetizer_1/aclk] [get_bd_pins axis_red_pitaya_adc_0/aclk] [get_bd_pins command_register/aclk] [get_bd_pins data_fifo/s_axi_aclk] [get_bd_pins decimator_register/aclk] [get_bd_pins mode_register/aclk] [get_bd_pins packetizer/aclk] [get_bd_pins post_register/aclk] [get_bd_pins pre_register/aclk] [get_bd_pins red_pitaya_ps/FCLK_CLK0] [get_bd_pins red_pitaya_ps/M_AXI_GP0_ACLK] [get_bd_pins red_pitaya_ps/S_AXI_HP0_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M00_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M01_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M02_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M03_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M04_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M05_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M06_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M07_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M08_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M09_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M10_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M11_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M12_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M13_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M14_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M15_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M16_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/S00_ACLK] [get_bd_pins resampler_0/aclk] [get_bd_pins rst_red_pitaya_ps_125M/slowest_sync_clk] [get_bd_pins time_fifo/s_axi_aclk] [get_bd_pins trarec_0/aclk]
+  connect_bd_net -net red_pitaya_ps_FCLK_CLK0 [get_bd_pins axis_decimator_0/aclk] [get_bd_pins axis_packetizer_0/aclk] [get_bd_pins axis_packetizer_1/aclk] [get_bd_pins axis_red_pitaya_adc_0/aclk] [get_bd_pins command_register/aclk] [get_bd_pins data_fifo/s_axi_aclk] [get_bd_pins decimator_register/aclk] [get_bd_pins event_code/aclk] [get_bd_pins highway_0/aclk] [get_bd_pins mode_register/aclk] [get_bd_pins packetizer/aclk] [get_bd_pins post_register/aclk] [get_bd_pins pre_register/aclk] [get_bd_pins red_pitaya_ps/FCLK_CLK0] [get_bd_pins red_pitaya_ps/M_AXI_GP0_ACLK] [get_bd_pins red_pitaya_ps/S_AXI_HP0_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M00_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M01_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M02_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M03_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M04_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M05_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M06_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M07_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M08_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M09_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M10_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M11_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M12_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M13_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M14_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M15_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M16_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/S00_ACLK] [get_bd_pins resampler_0/aclk] [get_bd_pins rst_red_pitaya_ps_125M/slowest_sync_clk] [get_bd_pins time_fifo/s_axi_aclk] [get_bd_pins trarec_0/aclk] [get_bd_pins trig_event_code/aclk]
   connect_bd_net -net red_pitaya_ps_FCLK_RESET0_N [get_bd_pins red_pitaya_ps/FCLK_RESET0_N] [get_bd_pins rst_red_pitaya_ps_125M/ext_reset_in]
   connect_bd_net -net resampler_0_sync_ext_clk [get_bd_pins resampler_0/sync_ext_clk] [get_bd_pins trarec_0/ext_clock]
   connect_bd_net -net rst_red_pitaya_ps_125M_interconnect_aresetn [get_bd_pins red_pitaya_ps_axi_periph/ARESETN] [get_bd_pins rst_red_pitaya_ps_125M/interconnect_aresetn]
-  connect_bd_net -net rst_red_pitaya_ps_125M_peripheral_aresetn [get_bd_pins axis_decimator_0/aresetn] [get_bd_pins axis_packetizer_0/aresetn] [get_bd_pins axis_packetizer_1/aresetn] [get_bd_pins command_register/aresetn] [get_bd_pins data_fifo/s_axi_aresetn] [get_bd_pins decimator_register/aresetn] [get_bd_pins mode_register/aresetn] [get_bd_pins packetizer/aresetn] [get_bd_pins post_register/aresetn] [get_bd_pins pre_register/aresetn] [get_bd_pins red_pitaya_ps_axi_periph/M00_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M01_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M02_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M03_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M04_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M05_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M06_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M07_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M08_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M09_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M10_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M11_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M12_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M13_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M14_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M15_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M16_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/S00_ARESETN] [get_bd_pins rst_red_pitaya_ps_125M/peripheral_aresetn] [get_bd_pins time_fifo/s_axi_aresetn]
+  connect_bd_net -net rst_red_pitaya_ps_125M_peripheral_aresetn [get_bd_pins axis_decimator_0/aresetn] [get_bd_pins axis_packetizer_0/aresetn] [get_bd_pins axis_packetizer_1/aresetn] [get_bd_pins command_register/aresetn] [get_bd_pins data_fifo/s_axi_aresetn] [get_bd_pins decimator_register/aresetn] [get_bd_pins event_code/aresetn] [get_bd_pins mode_register/aresetn] [get_bd_pins packetizer/aresetn] [get_bd_pins post_register/aresetn] [get_bd_pins pre_register/aresetn] [get_bd_pins red_pitaya_ps_axi_periph/M00_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M01_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M02_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M03_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M04_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M05_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M06_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M07_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M08_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M09_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M10_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M11_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M12_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M13_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M14_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M15_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M16_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/S00_ARESETN] [get_bd_pins rst_red_pitaya_ps_125M/peripheral_aresetn] [get_bd_pins time_fifo/s_axi_aresetn] [get_bd_pins trig_event_code/aresetn]
   connect_bd_net -net trarec_0_cbuf_addra [get_bd_pins blk_mem_gen_0/addra] [get_bd_pins trarec_0/cbuf_addra]
   connect_bd_net -net trarec_0_cbuf_addrb [get_bd_pins blk_mem_gen_0/addrb] [get_bd_pins trarec_0/cbuf_addrb]
   connect_bd_net -net trarec_0_cbuf_clka [get_bd_pins blk_mem_gen_0/clka] [get_bd_pins trarec_0/cbuf_clka]
@@ -880,13 +919,16 @@ proc create_root_design { parentCell } {
   connect_bd_net -net trarec_0_cbuf_wea [get_bd_pins blk_mem_gen_0/wea] [get_bd_pins trarec_0/cbuf_wea]
   connect_bd_net -net trarec_0_cbuf_web [get_bd_pins blk_mem_gen_0/web] [get_bd_pins trarec_0/cbuf_web]
   connect_bd_net -net trarec_0_led1_o [get_bd_ports led_o] [get_bd_pins trarec_0/led1_o]
-  connect_bd_net -net trarec_0_out_synch_trig [get_bd_ports Led] [get_bd_pins trarec_0/out_synch_trig]
-  connect_bd_net -net trigger_in_0_1 [get_bd_ports trigger_in_0] [get_bd_pins trarec_0/async_trigger_in]
+  connect_bd_net -net trarec_0_out_synch_trig [get_bd_ports Led]
+  connect_bd_net -net trig_event_code_cfg_data [get_bd_pins highway_0/in_event_code] [get_bd_pins trig_event_code/cfg_data]
+  connect_bd_net -net trigger_in_0_1 [get_bd_ports trigger_in_0] [get_bd_pins highway_0/in_trig]
 
   # Create address segments
   create_bd_addr_seg -range 0x00010000 -offset 0x50000000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs packetizer/s_axi/reg0] SEG_axi_cfg_register_0_reg0
+  create_bd_addr_seg -range 0x00010000 -offset 0x58000000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs trig_event_code/s_axi/reg0] SEG_axi_cfg_register_0_reg01
   create_bd_addr_seg -range 0x00010000 -offset 0x40420000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs time_fifo/S_AXI/Mem0] SEG_axi_fifo_mm_s_0_Mem0
   create_bd_addr_seg -range 0x00010000 -offset 0x40430000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs time_fifo/S_AXI_FULL/Mem1] SEG_axi_fifo_mm_s_0_Mem1
+  create_bd_addr_seg -range 0x00010000 -offset 0x70000000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs event_code/s_axi/reg0] SEG_axi_sts_register_0_reg0
   create_bd_addr_seg -range 0x00010000 -offset 0x42000000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs command_register/s_axi/reg0] SEG_command_register_reg0
   create_bd_addr_seg -range 0x00010000 -offset 0x40440000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs data_fifo/S_AXI/Mem0] SEG_data_fifo_Mem0
   create_bd_addr_seg -range 0x00010000 -offset 0x40450000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs data_fifo/S_AXI_FULL/Mem1] SEG_data_fifo_Mem1

@@ -65,26 +65,29 @@ architecture implementation of resampler is
  
 begin
 
-    xpm_cdc_array_single_inst : xpm_cdc_array_single
-    generic map (
-      -- Common module generics
-      DEST_SYNC_FF => 4, -- integer; range: 2-10
-      SIM_ASSERT_CHK => 0, -- integer; 0=disable simulation messages, 1=enable simulation messages
-      SRC_INPUT_REG => 0, -- integer; 0=do not register input, 1=register input
-      WIDTH => 1 -- integer; range: 1-1024
-    )
+--    xpm_cdc_array_single_inst : xpm_cdc_array_single
+--    generic map (
+--      -- Common module generics
+--      DEST_SYNC_FF => 4, -- integer; range: 2-10
+--      SIM_ASSERT_CHK => 0, -- integer; 0=disable simulation messages, 1=enable simulation messages
+--      SRC_INPUT_REG => 0, -- integer; 0=do not register input, 1=register input
+--      WIDTH => 1 -- integer; range: 1-1024
+--    )
       
-    port map (
-      src_clk => '0',
-      src_in => ext_clk_arr,
-      dest_clk => aclk,
-      dest_out => sync_ext_clk_arr
-    );
+--    port map (
+--      src_clk => '0',
+--      src_in => ext_clk_arr,
+--      dest_clk => aclk,
+--      dest_out => sync_ext_clk_arr
+--    );
       
-    sync_ext_clk <= int_sync_ext_clk;  
-    ext_clk_arr(0) <= ext_clk;
-    int_sync_ext_clk <= sync_ext_clk_arr(0);
+--    sync_ext_clk <= int_sync_ext_clk;  
+--    ext_clk_arr(0) <= ext_clk;
+--    int_sync_ext_clk <= sync_ext_clk_arr(0);
 
+    int_sync_ext_clk <= ext_clk;
+
+-------------------
     use_ext_clk <= mode_cfg(6);
     s_axis_tready <= '1';
 

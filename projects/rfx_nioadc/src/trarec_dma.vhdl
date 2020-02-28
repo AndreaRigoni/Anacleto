@@ -95,8 +95,7 @@ entity trarec is
     
 --  Test LED    
     led_o : out std_logic;
-    led1_o : out std_logic;
-    out_synch_trig: out std_logic
+    led1_o : out std_logic
     );
 
 end trarec;
@@ -150,28 +149,29 @@ architecture implementation of trarec is
 begin
 
 
-     xpm_cdc_array_single_inst : xpm_cdc_array_single
-      generic map (
-      -- Common module generics
-      DEST_SYNC_FF => 4, -- integer; range: 2-10
-      SIM_ASSERT_CHK => 0, -- integer; 0=disable simulation messages, 1=enable simulation messages
-      SRC_INPUT_REG => 0, -- integer; 0=do not register input, 1=register input
-      WIDTH => 1 -- integer; range: 1-1024
-      )
+--     xpm_cdc_array_single_inst : xpm_cdc_array_single
+--      generic map (
+--      -- Common module generics
+--      DEST_SYNC_FF => 4, -- integer; range: 2-10
+--      SIM_ASSERT_CHK => 0, -- integer; 0=disable simulation messages, 1=enable simulation messages
+--      SRC_INPUT_REG => 0, -- integer; 0=do not register input, 1=register input
+--      WIDTH => 1 -- integer; range: 1-1024
+--      )
       
-      port map (
-      src_clk => '0',
-      src_in => async_trig_in_arr,
-      dest_clk => aclk,
-      dest_out => trig_in_arr
-      );
+--      port map (
+--      src_clk => '0',
+--      src_in => async_trig_in_arr,
+--      dest_clk => aclk,
+--      dest_out => trig_in_arr
+--      );
       
-    async_trig_in_arr(0) <= async_trigger_in;
-    trigger_in <= trig_in_arr(0);
-    --trigger_in <= async_trigger_in;
-    out_synch_trig <= trigger_in;
+--    async_trig_in_arr(0) <= async_trigger_in;
+--    trigger_in <= trig_in_arr(0);
+--    out_synch_trig <= trigger_in;
 
+    trigger_in <= async_trigger_in;  --Already synchronized
 
+-------------------------
     dbg_cbuf_in_addr <= cbuf_in_addr;
     dbg_cbuf_curr_in_addr <= cbuf_curr_in_addr;
     dbg_cbuf_start_out_addr <= cbuf_start_out_addr;
@@ -199,6 +199,7 @@ begin
 --      4: Multiple triggers (1) or single trigger (0)
 --      5: Ext. clock Timing. External clock cycles(1) or data samples (0) counted for timestamp generation 
 --      6: Ext clock resampling. If 1: data are resampled on ext clock signal. If 0: data are decimated based from 125MHz via decimation register
+--      7: Clock and trigger derived from tining highway
 --      8-15: Trigger count (number of samples for validating trigger)
 --      16-31: Trigger level  (valid only if level trigger enabled)   
     
