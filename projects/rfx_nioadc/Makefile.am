@@ -21,6 +21,8 @@ nioadc_dma_SOURCES = red_pitaya.xdc \
                      src/trarec_dma.vhdl \
                      src/trarec_dma_tb.vhdl
 
+vivado_PROJECTS += nioadc_freq
+nioadc_freq_SOURCES = $(nioadc_dma_SOURCES)
 
 
 .PHONY: linux

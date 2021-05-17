@@ -60,7 +60,7 @@ static struct file_operations fops = {
     .poll = device_poll,
 };
 
-#define BUFSIZE 65536
+#define BUFSIZE 200000
 
 struct rpadc_fifo_auto_dev {
     struct platform_device *pdev;

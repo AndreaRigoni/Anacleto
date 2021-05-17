@@ -13,8 +13,16 @@ AX_CONFIG_FILES(
  w7x_timing/Makefile
  prova/Makefile
 
- rfx_dmatests/Makefile
- rfx_dmatests/linux/Makefile
- rfx_dmatests/linux/Kbuild
+ rfx_recorder/Makefile
+ rfx_recorder/linux/src/Makefile
+ rfx_recorder/linux/src/Kbuild
+
+ rfx_stream/Makefile
+ rfx_stream/linux/src/Makefile
+ rfx_stream/linux/src/Kbuild
+
+ rfx_dac/Makefile
+ rfx_dac/linux/src/Makefile
+ rfx_dac/linux/src/Kbuild
 )
 

@@ -62,7 +62,8 @@ extern "C" {
 #define RPADC_FIFO_AUTO_CLEAR_TIME_FIFO		_IO(RPADC_FIFO_AUTO_IOCTL_BASE, 41)
   
 
-
+#ifndef AXI_ENUMS_DEFINED
+#define AXI_ENUMS_DEFINED
 enum AxiStreamFifo_Register {
     ISR   = 0x00,   ///< Interrupt Status Register (ISR)
     IER   = 0x04,   ///< Interrupt Enable Register (IER)
@@ -112,7 +113,7 @@ enum RegisterIdx {
     DEC_REG_IDX = 6,
     MODE_REG_IDX = 8
 };
-
+#endif
 
 #pragma pack(1)
 

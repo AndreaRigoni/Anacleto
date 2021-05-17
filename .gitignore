@@ -17,11 +17,6 @@ Makefile.in
 /stamp-h1
 
 /build*
-/linux
-/toolchain
-*.bkp*
-
-/projects/*/edit/
 
 vivado_project/
 .cache/
@@ -31,3 +26,7 @@ vivado_project/
 /downloads
 /home/mdsplus/devel/anacleto/toolchain
 /linux
+toolchain
+lib
+uImage
+fpga/device-tree-xlnx-2017.4
