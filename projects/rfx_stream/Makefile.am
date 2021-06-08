@@ -9,6 +9,9 @@ VENDOR = rfx
 ## PROJECTS ##
 
 
+export DEVICE_BOOT_DIR = /root/rfx_stream
+export DEVICE_MODULES_DIR = /root/rfx_stream
+
 vivado_PROJECTS = stream_10 stream 
 
 stream_SOURCES = red_pitaya.xdc \
@@ -23,7 +26,10 @@ stream_10_SOURCES = red_pitaya_10.xdc \
                  src/resampler.vhdl \
                  src/timing_highway.vhdl
 
-
+patch: ##@hsi fix the system-top.dts for usb support on redpitaya (must be triggered before dts)
+patch:
+	patch  -u -b edit/red_pitaya/rfx_stream_0.1.sdk/dts/system-top.dts -i prj/red_pitaya/patches/system-top.patch
+	patch  -u -b edit/red_pitaya/rfx_stream_10.sdk/dts/system-top.dts -i prj/red_pitaya/patches/system-top.patch
 
 .PHONY: linux
 linux:
