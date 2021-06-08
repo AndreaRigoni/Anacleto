@@ -1,0 +1,22 @@
+--- edit/red_pitaya/rfx_stream_0.1.sdk/dts/system-top.dts.bkp	2021-05-19 09:15:12.867705974 +0200
++++ edit/red_pitaya/rfx_stream_0.1.sdk/dts/system-top.dts	2021-05-19 09:39:53.529769576 +0200
+@@ -24,4 +24,19 @@
+ 		device_type = "memory";
+ 		reg = <0x0 0x20000000>;
+ 	};
++
++	usb_phy0:phy0 {
++		compatible="ulpi-phy";
++		#phy-cells = <0>;
++		reg = <0xe0002000 0x1000>;
++		view-port=<0x170>;
++		drv-vbus;
++    };
+ };
++
++&usb0 {
++        status = "okay";
++        dr_mode = "host";
++        usb-phy = <&usb_phy0>;
++};
++

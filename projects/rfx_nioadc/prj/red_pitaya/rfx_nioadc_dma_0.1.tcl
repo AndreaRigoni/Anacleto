@@ -4,6 +4,11 @@
 ## ////////////////////////////////////////////////////////////////////////// ##
 
 
+## ////////////////////////////////////////////////////////////////////////// ##
+## /// MAKE ENV  //////////////////////////////////////////////////////////// ##
+## ////////////////////////////////////////////////////////////////////////// ##
+
+
 # ////////////////////////////////////////////////////////////////////////// //
 #
 # This file is part of the anacleto project.
@@ -197,18 +202,22 @@ namespace upvar ::tclapp::socdev::makeutils core_env    core_env
  file copy -force "$project_env(dir_src)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/red_pitaya_ps_1.bd" \
     "$project_env(dir_prj)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/red_pitaya_ps_1.bd"
  file mkdir "$project_env(dir_prj)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/hdl"
- file copy -force "$project_env(dir_src)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/hdl/red_pitaya_ps_1_wrapper.v" \
-    "$project_env(dir_prj)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/hdl/red_pitaya_ps_1_wrapper.v"
+ file copy -force "$project_env(dir_src)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/hdl/red_pitaya_ps_1_wrapper.vhd" \
+    "$project_env(dir_prj)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/hdl/red_pitaya_ps_1_wrapper.vhd"
  set files [list \
-  "[file normalize $make_env(srcdir)/src/trarec.vhdl]"\
-  "[file normalize $make_env(srcdir)/src/trarec_tb.vhdl]"\
+  "[file normalize $make_env(srcdir)/src/trarec_dma.vhdl]"\
+  "[file normalize $make_env(srcdir)/src/resampler.vhdl]"\
+  "[file normalize $make_env(srcdir)/src/frequency_counter.v]"\
+  "[file normalize $make_env(srcdir)/src/vi_rms.v]"\
   "[file normalize $project_env(dir_prj)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/red_pitaya_ps_1.bd]"\
-  "[file normalize $project_env(dir_prj)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/hdl/red_pitaya_ps_1_wrapper.v]"\
+  "[file normalize $project_env(dir_prj)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/hdl/red_pitaya_ps_1_wrapper.vhd]"\
+  "[file normalize $make_env(srcdir)/src/resampler_tb.vhdl]"\
+  "[file normalize $make_env(srcdir)/src/trarec_dma_tb.vhdl]"\
  ]
  add_files -norecurse -fileset $obj $files
  # 
- # Properties for trarec.vhdl
-  set file "$project_env(dir_src)/../../src/trarec.vhdl"
+ # Properties for trarec_dma.vhdl
+  set file "$project_env(dir_src)/../../src/trarec_dma.vhdl"
   set file [file normalize $file]
   set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
   set_property -quiet "file_type" "VHDL" $file_obj
@@ -220,8 +229,297 @@ namespace upvar ::tclapp::socdev::makeutils core_env    core_env
   set_property -quiet "used_in_simulation" "1" $file_obj
   set_property -quiet "used_in_synthesis" "1" $file_obj
  # 
- # Properties for trarec_tb.vhdl
-  set file "$project_env(dir_src)/../../src/trarec_tb.vhdl"
+ # Properties for resampler.vhdl
+  set file "$project_env(dir_src)/../../src/resampler.vhdl"
+  set file [file normalize $file]
+  set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+  set_property -quiet "file_type" "VHDL" $file_obj
+  set_property -quiet "is_enabled" "1" $file_obj
+  set_property -quiet "is_global_include" "0" $file_obj
+  set_property -quiet "library" "xil_defaultlib" $file_obj
+  set_property -quiet "path_mode" "RelativeFirst" $file_obj
+  set_property -quiet "used_in" "synthesis simulation" $file_obj
+  set_property -quiet "used_in_simulation" "1" $file_obj
+  set_property -quiet "used_in_synthesis" "1" $file_obj
+ # 
+ # Properties for frequency_counter.v
+  set file "$project_env(dir_src)/../../src/frequency_counter.v"
+  set file [file normalize $file]
+  set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+  set_property -quiet "file_type" "Verilog" $file_obj
+  set_property -quiet "is_enabled" "1" $file_obj
+  set_property -quiet "is_global_include" "0" $file_obj
+  set_property -quiet "library" "xil_defaultlib" $file_obj
+  set_property -quiet "path_mode" "RelativeFirst" $file_obj
+  set_property -quiet "used_in" "synthesis implementation simulation" $file_obj
+  set_property -quiet "used_in_implementation" "1" $file_obj
+  set_property -quiet "used_in_simulation" "1" $file_obj
+  set_property -quiet "used_in_synthesis" "1" $file_obj
+ # 
+ # Properties for vi_rms.v
+  set file "$project_env(dir_src)/../../src/vi_rms.v"
+  set file [file normalize $file]
+  set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+  set_property -quiet "file_type" "Verilog" $file_obj
+  set_property -quiet "is_enabled" "1" $file_obj
+  set_property -quiet "is_global_include" "0" $file_obj
+  set_property -quiet "library" "xil_defaultlib" $file_obj
+  set_property -quiet "path_mode" "RelativeFirst" $file_obj
+  set_property -quiet "used_in" "synthesis implementation simulation" $file_obj
+  set_property -quiet "used_in_implementation" "1" $file_obj
+  set_property -quiet "used_in_simulation" "1" $file_obj
+  set_property -quiet "used_in_synthesis" "1" $file_obj
+ # 
+ # Properties for resampler_tb.vhdl
+  set file "$project_env(dir_src)/../../src/resampler_tb.vhdl"
+  set file [file normalize $file]
+  set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+  set_property -quiet "file_type" "VHDL" $file_obj
+  set_property -quiet "is_enabled" "1" $file_obj
+  set_property -quiet "is_global_include" "0" $file_obj
+  set_property -quiet "library" "xil_defaultlib" $file_obj
+  set_property -quiet "path_mode" "RelativeFirst" $file_obj
+  set_property -quiet "used_in" "synthesis simulation" $file_obj
+  set_property -quiet "used_in_simulation" "1" $file_obj
+  set_property -quiet "used_in_synthesis" "1" $file_obj
+ # 
+ # Properties for trarec_dma_tb.vhdl
+  set file "$project_env(dir_src)/../../src/trarec_dma_tb.vhdl"
+  set file [file normalize $file]
+  set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+  set_property -quiet "file_type" "VHDL" $file_obj
+  set_property -quiet "is_enabled" "1" $file_obj
+  set_property -quiet "is_global_include" "0" $file_obj
+  set_property -quiet "library" "xil_defaultlib" $file_obj
+  set_property -quiet "path_mode" "RelativeFirst" $file_obj
+  set_property -quiet "used_in" "synthesis simulation" $file_obj
+  set_property -quiet "used_in_simulation" "1" $file_obj
+  set_property -quiet "used_in_synthesis" "1" $file_obj
+ # 
+ # Properties for red_pitaya_ps_1.bd
+  set file "$project_env(dir_prj)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/red_pitaya_ps_1.bd"
+  set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+  set_property -quiet "exclude_debug_logic" "0" $file_obj
+  if { ![get_property "is_locked" $file_obj] } {
+    set_property -quiet "generate_synth_checkpoint" "1" $file_obj
+  }
+  set_property -quiet "is_enabled" "1" $file_obj
+  set_property -quiet "is_global_include" "0" $file_obj
+  if { ![get_property "is_locked" $file_obj] } {
+    set_property -quiet "is_locked" "0" $file_obj
+  }
+  set_property -quiet "library" "xil_defaultlib" $file_obj
+  set_property -quiet "path_mode" "RelativeFirst" $file_obj
+  set_property -quiet "pfm_name" "" $file_obj
+  if { ![get_property "is_locked" $file_obj] } {
+    set_property -quiet "synth_checkpoint_mode" "Hierarchical" $file_obj
+  }
+  set_property -quiet "used_in" "synthesis implementation simulation" $file_obj
+  set_property -quiet "used_in_implementation" "1" $file_obj
+  set_property -quiet "used_in_simulation" "1" $file_obj
+  set_property -quiet "used_in_synthesis" "1" $file_obj
+ # 
+ # Properties for red_pitaya_ps_1_wrapper.vhd
+  set file "$project_env(dir_prj)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/hdl/red_pitaya_ps_1_wrapper.vhd"
+  set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+  set_property -quiet "file_type" "VHDL" $file_obj
+  set_property -quiet "is_enabled" "1" $file_obj
+  set_property -quiet "is_global_include" "0" $file_obj
+  set_property -quiet "library" "xil_defaultlib" $file_obj
+  set_property -quiet "path_mode" "RelativeFirst" $file_obj
+  set_property -quiet "used_in" "synthesis simulation" $file_obj
+  set_property -quiet "used_in_simulation" "1" $file_obj
+  set_property -quiet "used_in_synthesis" "1" $file_obj
+ # 
+ # 
+ # 
+ # /////////////////////////////////////////////////////////////  
+ # // constrs_1                                                    
+ # /////////////////////////////////////////////////////////////  
+ # 
+ # Create 'constrs_1' fileset (if not found)
+ if {[string equal [get_filesets -quiet constrs_1] ""]} {
+   create_fileset -constrset constrs_1
+ }
+ # 
+ # Set 'constrs_1' fileset object
+ set obj [get_filesets constrs_1]
+ set files [list \
+  "[file normalize $make_env(srcdir)/./red_pitaya.xdc]"\
+ ]
+ add_files -norecurse -fileset $obj $files
+ # 
+ # Properties for red_pitaya.xdc
+  set file "$project_env(dir_src)/../../red_pitaya.xdc"
+  set file [file normalize $file]
+  set file_obj [get_files -of_objects [get_filesets constrs_1] [list "$file"]]
+  set_property -quiet "file_type" "XDC" $file_obj
+  set_property -quiet "is_enabled" "1" $file_obj
+  set_property -quiet "is_global_include" "0" $file_obj
+  set_property -quiet "library" "xil_defaultlib" $file_obj
+  set_property -quiet "path_mode" "RelativeFirst" $file_obj
+  set_property -quiet "processing_order" "NORMAL" $file_obj
+  set_property -quiet "scoped_to_cells" "" $file_obj
+  set_property -quiet "scoped_to_ref" "" $file_obj
+  set_property -quiet "used_in" "synthesis implementation" $file_obj
+  set_property -quiet "used_in_implementation" "1" $file_obj
+  set_property -quiet "used_in_synthesis" "1" $file_obj
+ # 
+ # No properties for constrs_1
+ # 
+ # 
+ # /////////////////////////////////////////////////////////////  
+ # // sim_1                                                    
+ # /////////////////////////////////////////////////////////////  
+ # 
+ # Create 'sim_1' fileset (if not found)
+ if {[string equal [get_filesets -quiet sim_1] ""]} {
+   create_fileset -simset sim_1
+ }
+ # 
+ # Set 'sim_1' fileset object
+ set obj [get_filesets sim_1]
+ # Empty (no sources present)
+
+ # 
+ # 
+
+namespace upvar ::tclapp::socdev::makeutils make_env    make_env
+namespace upvar ::tclapp::socdev::makeutils project_env project_env
+namespace upvar ::tclapp::socdev::makeutils core_env    core_env
+
+
+## ////////////////////////////////////////////////////////////////////////// ##
+## /// CREATE PROJ ////////////////////////////////////////////////////////// ##
+## ////////////////////////////////////////////////////////////////////////// ##
+ 
+ create_project rfx_nioadc_dma_0.1  "$make_env(builddir)/edit/red_pitaya"  -part xc7z010clg400-1
+ 
+ # Set the directory path for the new project
+ set proj_dir [get_property directory [current_project]]
+ 
+ # Reconstruct message rules
+ # None
+ 
+## ////////////////////////////////////////////////////////////////////////// ##
+## /// FILESETS    ////////////////////////////////////////////////////////// ##
+## ////////////////////////////////////////////////////////////////////////// ##
+
+ # /////////////////////////////////////////////////////////////  
+ # // sources_1                                                    
+ # /////////////////////////////////////////////////////////////  
+ # 
+ # Create 'sources_1' fileset (if not found)
+ if {[string equal [get_filesets -quiet sources_1] ""]} {
+   create_fileset -srcset sources_1
+ }
+ # 
+ # Set IP repository paths
+ # No local ip repos found for sources_1 ... 
+ # 
+ # Set 'sources_1' fileset object
+ set obj [get_filesets sources_1]
+ file mkdir "$project_env(dir_prj)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1"
+ file copy -force "$project_env(dir_src)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/red_pitaya_ps_1.bd" \
+    "$project_env(dir_prj)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/red_pitaya_ps_1.bd"
+ file mkdir "$project_env(dir_prj)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/hdl"
+ file copy -force "$project_env(dir_src)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/hdl/red_pitaya_ps_1_wrapper.vhd" \
+    "$project_env(dir_prj)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/hdl/red_pitaya_ps_1_wrapper.vhd"
+ set files [list \
+  "[file normalize $make_env(srcdir)/src/resampler.vhdl]"\
+  "[file normalize $make_env(srcdir)/src/trarec_dma.vhdl]"\
+  "[file normalize $make_env(srcdir)/src/timing_highway.vhdl]"\
+  "[file normalize $project_env(dir_prj)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/red_pitaya_ps_1.bd]"\
+  "[file normalize $project_env(dir_prj)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/hdl/red_pitaya_ps_1_wrapper.vhd]"\
+  "[file normalize $make_env(srcdir)/src/frequency_counter.v]"\
+  "[file normalize $make_env(srcdir)/src/vi_rms.v]"\
+  "[file normalize $make_env(srcdir)/src/resampler_tb.vhdl]"\
+  "[file normalize $make_env(srcdir)/src/trarec_dma_tb.vhdl]"\
+ ]
+ add_files -norecurse -fileset $obj $files
+ # 
+ # Properties for resampler.vhdl
+  set file "$project_env(dir_src)/../../src/resampler.vhdl"
+  set file [file normalize $file]
+  set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+  set_property -quiet "file_type" "VHDL" $file_obj
+  set_property -quiet "is_enabled" "1" $file_obj
+  set_property -quiet "is_global_include" "0" $file_obj
+  set_property -quiet "library" "xil_defaultlib" $file_obj
+  set_property -quiet "path_mode" "RelativeFirst" $file_obj
+  set_property -quiet "used_in" "synthesis simulation" $file_obj
+  set_property -quiet "used_in_simulation" "1" $file_obj
+  set_property -quiet "used_in_synthesis" "1" $file_obj
+ # 
+ # Properties for trarec_dma.vhdl
+  set file "$project_env(dir_src)/../../src/trarec_dma.vhdl"
+  set file [file normalize $file]
+  set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+  set_property -quiet "file_type" "VHDL" $file_obj
+  set_property -quiet "is_enabled" "1" $file_obj
+  set_property -quiet "is_global_include" "0" $file_obj
+  set_property -quiet "library" "xil_defaultlib" $file_obj
+  set_property -quiet "path_mode" "RelativeFirst" $file_obj
+  set_property -quiet "used_in" "synthesis simulation" $file_obj
+  set_property -quiet "used_in_simulation" "1" $file_obj
+  set_property -quiet "used_in_synthesis" "1" $file_obj
+ # 
+ # Properties for timing_highway.vhdl
+  set file "$project_env(dir_src)/../../src/timing_highway.vhdl"
+  set file [file normalize $file]
+  set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+  set_property -quiet "file_type" "VHDL" $file_obj
+  set_property -quiet "is_enabled" "1" $file_obj
+  set_property -quiet "is_global_include" "0" $file_obj
+  set_property -quiet "library" "xil_defaultlib" $file_obj
+  set_property -quiet "path_mode" "RelativeFirst" $file_obj
+  set_property -quiet "used_in" "synthesis simulation" $file_obj
+  set_property -quiet "used_in_simulation" "1" $file_obj
+  set_property -quiet "used_in_synthesis" "1" $file_obj
+ # 
+ # Properties for frequency_counter.v
+  set file "$project_env(dir_src)/../../src/frequency_counter.v"
+  set file [file normalize $file]
+  set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+  set_property -quiet "file_type" "Verilog" $file_obj
+  set_property -quiet "is_enabled" "1" $file_obj
+  set_property -quiet "is_global_include" "0" $file_obj
+  set_property -quiet "library" "xil_defaultlib" $file_obj
+  set_property -quiet "path_mode" "RelativeFirst" $file_obj
+  set_property -quiet "used_in" "synthesis implementation simulation" $file_obj
+  set_property -quiet "used_in_implementation" "1" $file_obj
+  set_property -quiet "used_in_simulation" "1" $file_obj
+  set_property -quiet "used_in_synthesis" "1" $file_obj
+ # 
+ # Properties for vi_rms.v
+  set file "$project_env(dir_src)/../../src/vi_rms.v"
+  set file [file normalize $file]
+  set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+  set_property -quiet "file_type" "Verilog" $file_obj
+  set_property -quiet "is_enabled" "1" $file_obj
+  set_property -quiet "is_global_include" "0" $file_obj
+  set_property -quiet "library" "xil_defaultlib" $file_obj
+  set_property -quiet "path_mode" "RelativeFirst" $file_obj
+  set_property -quiet "used_in" "synthesis implementation simulation" $file_obj
+  set_property -quiet "used_in_implementation" "1" $file_obj
+  set_property -quiet "used_in_simulation" "1" $file_obj
+  set_property -quiet "used_in_synthesis" "1" $file_obj
+ # 
+ # Properties for resampler_tb.vhdl
+  set file "$project_env(dir_src)/../../src/resampler_tb.vhdl"
+  set file [file normalize $file]
+  set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
+  set_property -quiet "file_type" "VHDL" $file_obj
+  set_property -quiet "is_enabled" "1" $file_obj
+  set_property -quiet "is_global_include" "0" $file_obj
+  set_property -quiet "library" "xil_defaultlib" $file_obj
+  set_property -quiet "path_mode" "RelativeFirst" $file_obj
+  set_property -quiet "used_in" "synthesis simulation" $file_obj
+  set_property -quiet "used_in_simulation" "1" $file_obj
+  set_property -quiet "used_in_synthesis" "1" $file_obj
+ # 
+ # Properties for trarec_dma_tb.vhdl
+  set file "$project_env(dir_src)/../../src/trarec_dma_tb.vhdl"
   set file [file normalize $file]
   set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
   set_property -quiet "file_type" "VHDL" $file_obj
@@ -256,16 +554,15 @@ namespace upvar ::tclapp::socdev::makeutils core_env    core_env
   set_property -quiet "used_in_simulation" "1" $file_obj
   set_property -quiet "used_in_synthesis" "1" $file_obj
  # 
- # Properties for red_pitaya_ps_1_wrapper.v
-  set file "$project_env(dir_prj)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/hdl/red_pitaya_ps_1_wrapper.v"
+ # Properties for red_pitaya_ps_1_wrapper.vhd
+  set file "$project_env(dir_prj)/rfx_nioadc_dma_0.1.srcs/sources_1/bd/red_pitaya_ps_1/hdl/red_pitaya_ps_1_wrapper.vhd"
   set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
-  set_property -quiet "file_type" "Verilog" $file_obj
+  set_property -quiet "file_type" "VHDL" $file_obj
   set_property -quiet "is_enabled" "1" $file_obj
   set_property -quiet "is_global_include" "0" $file_obj
   set_property -quiet "library" "xil_defaultlib" $file_obj
   set_property -quiet "path_mode" "RelativeFirst" $file_obj
-  set_property -quiet "used_in" "synthesis implementation simulation" $file_obj
-  set_property -quiet "used_in_implementation" "1" $file_obj
+  set_property -quiet "used_in" "synthesis simulation" $file_obj
   set_property -quiet "used_in_simulation" "1" $file_obj
   set_property -quiet "used_in_synthesis" "1" $file_obj
  # 
