@@ -16,9 +16,11 @@ entity recorder is
     C_M_AXIS_DATA_WIDTH : integer range 32 to 256 := 32;
     
     -- Slave AXI Stream Data Width
-    C_S_AXIS_DATA_WIDTH : integer range 32 to 256 := 32
+    C_S_AXIS_DATA_WIDTH : integer range 32 to 256 := 32;
     
-    );
+    -- Number of channels
+    C_NUM_CHANNELS: integer range 0 to 16 := 12
+  );
   port (
 
     -- Global Ports
@@ -35,14 +37,6 @@ entity recorder is
     m_axis_tready  : in  std_logic;
     m_axis_tlast   : out std_logic;
 
---  data port Streaming
-    s_axis_stream_tdata   : in  std_logic_vector(C_S_AXIS_DATA_WIDTH-1 downto 0);
-    s_axis_stream_tvalid  : in  std_logic;
-    s_axis_stream_tready  : out std_logic;
-    
-    m_axis_stream_tdata   : out std_logic_vector(C_M_AXIS_DATA_WIDTH-1 downto 0);
-    m_axis_stream_tvalid  : out std_logic;
-    m_axis_stream_tready  : in  std_logic;
  
     ext_trigger        : in std_logic;
     
@@ -68,24 +62,22 @@ architecture implementation of recorder is
     signal sw_trigger: std_logic;
     signal arm_cmd: std_logic;
     signal stop_cmd: std_logic;
-    signal start_stream: std_logic;
-    signal stop_stream: std_logic;
-    signal out_tdata: std_logic_vector (C_S_AXIS_DATA_WIDTH-1 downto 0) := (others => '0'); 
     signal out_count_reg: std_logic_vector (C_S_AXIS_DATA_WIDTH-1 downto 0) := (others => '0');
-    signal out_tvalid : std_logic;
-    signal out_tlast : std_logic;
     signal use_ext_trigger : std_logic;
+    signal data_present : std_logic := '0';
+    signal last_data : std_logic := '0';
     constant STATE_IDLE: integer := 0;
     constant STATE_ARMED: integer := 1;
     constant STATE_TRIGGERED: integer := 2;
     constant STATE_FLUSHING_CHUNK: integer := 3;
     
-    constant STATE_STREAM_IDLE: integer := 0;
-    constant STATE_STREAM_ACTIVE: integer := 1;
-    
+    constant STATE_OUTPUT: integer := 1; --not an error....
     
     constant STATUS_ARMED_BIT: integer:= 0;
     constant STATUS_TRIGGERED_BIT: integer:= 1;  
+ 
+    type t_chans32 is array(0 to C_NUM_CHANNELS - 1) of signed(31 downto 0);
+    signal in_data: t_chans32;
  
 begin
 -- Command register bits:
@@ -98,20 +90,14 @@ begin
     sw_trigger <= cmd_reg(0);
     arm_cmd <= cmd_reg(1);
     stop_cmd <= cmd_reg(2);
-    start_stream <= cmd_reg(3);
-    stop_stream <= cmd_reg(4);
     
 -- Mode register bits: 
 -- 0: Use Ext Transient recorder trigger (1)
 -- 1: Use Ext Autozero trigger
     use_ext_trigger <= mode_reg(0);
     
-    s_axis_stream_tready <= '1';
     s_axis_tready <= '1';
 
-    m_axis_tvalid <= out_tvalid;
-    m_axis_tdata <= out_tdata; 
-    m_axis_tlast <= out_tlast;
     count_reg <= out_count_reg; 
            
                      
@@ -119,22 +105,20 @@ begin
         variable state : integer range 0 to 3 := STATE_IDLE;
         variable pts_count : integer;
         variable out_count : integer;
-        variable chunk_count : integer;
         variable flush_clock_count : integer := 0;
+        variable idx: integer range 0 to 16;
         begin
             if falling_edge(aclk)  then
                 case state is
                     when STATE_IDLE => 
-                       out_tvalid <= '0';
-                       out_tlast <= '0';
-                       status_reg <= (others => '0');
+--                       out_tvalid <= '0';
+                        status_reg <= (others => '0');
                         if arm_cmd = '1' then
                             state := STATE_ARMED;
                         end if;
                         
                      when STATE_ARMED => 
-                        out_tvalid <= '0';
-                        out_tlast <= '0';
+--                        out_tvalid <= '0';
                         status_reg <= (STATUS_ARMED_BIT => '1', others => '0');
                         if stop_cmd = '1' then
                             state := STATE_IDLE;
@@ -146,8 +130,8 @@ begin
                         end if;
                        
                      when  STATE_TRIGGERED =>
-                        out_tvalid <= s_axis_tvalid;
-                        out_tdata <= s_axis_tdata;
+--                        out_tvalid <= s_axis_tvalid;
+--                        out_tdata <= s_axis_tdata;
                         status_reg <= (STATUS_TRIGGERED_BIT => '1', others => '0');
                         if stop_cmd = '1' and pts_count > 0 then
                             state := STATE_FLUSHING_CHUNK;
@@ -156,23 +140,10 @@ begin
                                 state := STATE_IDLE;
                              end if;
                         end if;
---                        if chunk_count = 1 then
-                        if pts_count = 0 then
-                            out_tlast <= '1';
-                        else
-                            out_tlast <= '0';
-                        end if;
-
                      when  STATE_FLUSHING_CHUNK =>
                         if pts_count = 0  then
                             state := STATE_IDLE;
-                        end if;
-                        if pts_count = 0 then
-                             out_tlast <= '1';
-                         else
-                             out_tlast <= '0';
-                         end if;
-                       
+                        end if;                       
                  end case;
             end if;
             
@@ -180,75 +151,95 @@ begin
                 if state = STATE_FLUSHING_CHUNK then
                     flush_clock_count := flush_clock_count + 1; --avoid oveflowing DMA FIFO when flushing at full speed
                     if flush_clock_count > 10000 then
-                        out_tvalid <= '1';
+                        idx := 0;
+                        while(idx < C_NUM_CHANNELS) loop
+                            in_data(idx) <= (others => '0');
+                            idx := idx + 1;
+                        end loop;
+                        data_present <= '1';
                         flush_clock_count := 0;
                         pts_count := pts_count - 1;
+                        if pts_count = 0 then
+                            last_data <= '1';
+                        else
+                            last_data <= '0';
+                        end if;
                     else
-                        out_tvalid <= '0';
+                        data_present <= '0';
                     end if;
-                    out_tdata <= (others => '0');
-                else
---                    if state = STATE_TRIGGERED then
---                        out_tvalid <= s_axis_tvalid;
---                        out_tdata <= s_axis_tdata;
---                    else
---                        out_tvalid <= '0';
---                        out_tlast <= '0';
---                    end if;
+                 else
                     if s_axis_tvalid = '1' then
+                        if state = STATE_IDLE then
+                         out_count := 0;
+                         pts_count := to_integer(signed(pts_reg(C_S_AXIS_DATA_WIDTH-1 downto 0)));
+                        end if;
                         if state = STATE_ARMED then
                             out_count := out_count + 1;
                         end if;
                         if state = STATE_TRIGGERED then
+                            in_data(0) <= signed(s_axis_tdata(15 downto 0));
+                            in_data(1) <= signed(s_axis_tdata(31 downto 16));
+                            in_data(2) <= signed(s_axis_tdata(15 downto 0))+1;
+                            in_data(3) <= signed(s_axis_tdata(31 downto 16))+1;
+                            in_data(4) <= signed(s_axis_tdata(15 downto 0))+2;
+                            in_data(5) <= signed(s_axis_tdata(31 downto 16))+2;
+                            in_data(6) <= signed(s_axis_tdata(15 downto 0))+3;
+                            in_data(7) <= signed(s_axis_tdata(31 downto 16))+3;
+                            in_data(8) <= signed(s_axis_tdata(15 downto 0))+4;
+                            in_data(9) <= signed(s_axis_tdata(31 downto 16))+4;
+                            in_data(10) <= signed(s_axis_tdata(15 downto 0))+5;
+                            in_data(11) <= signed(s_axis_tdata(31 downto 16))+5;
+                            data_present <= '1';
                             pts_count := pts_count - 1;
-                            chunk_count := chunk_count - 1;
-                            if chunk_count = 0 then
-                                chunk_count := to_integer(signed(chunk_size_reg(C_S_AXIS_DATA_WIDTH-1 downto 0)));
+                            if pts_count = 0 then
+                                last_data <= '1';
+                            else
+                                last_data <= '0';
                             end if;
-
+                        else
+                            data_present <= '0';
                         end if;
-                    end if;
-                    if state = STATE_IDLE then
-                        out_count := 0;
-                        pts_count := to_integer(signed(pts_reg(C_S_AXIS_DATA_WIDTH-1 downto 0)));
-                        chunk_count := to_integer(signed(chunk_size_reg(C_S_AXIS_DATA_WIDTH-1 downto 0)));
+                    else
+                        data_present <= '0';
                     end if;
                  end if;
             end if;
             
         end process;   
         
-        
-        
-        
-    handle_streaming: process(aclk)
-         variable state : integer range 0 to 1 := STATE_STREAM_IDLE;
+    handle_output: process(aclk)
+         variable state1 : integer range 0 to 1 := STATE_IDLE;
+         variable idx1 : integer range 0 to 16;
+         variable is_last : std_logic := '0';
          begin
-             if falling_edge(aclk)  then
-                 case state is
-                     when STATE_STREAM_IDLE => 
-                        m_axis_stream_tdata <=  (others => '0');
-                        m_axis_stream_tvalid <=  '0';
-                        if start_stream = '1' then
-                            state := STATE_STREAM_ACTIVE;
+            if falling_edge(aclk)  then
+                case state1 is
+                    when STATE_IDLE =>
+                        m_axis_tvalid <= '0';
+                        m_axis_tlast <= '0';
+                        if data_present = '1' then
+                            is_last := last_data;
+                            idx1 := 0;
+                            state1 := STATE_OUTPUT;
                         end if;
-                     when STATE_STREAM_ACTIVE => 
-                        m_axis_stream_tdata <=  s_axis_stream_tdata;
-                        m_axis_stream_tvalid <=  s_axis_stream_tvalid;
-                        if stop_stream = '1' then
-                             state := STATE_STREAM_IDLE;
+                    when STATE_OUTPUT =>
+                        m_axis_tdata <= std_logic_vector(in_data(idx1));
+                        m_axis_tvalid <= '1';
+  --                       m_axis_tvalid <= '0';
+                        idx1 := idx1 + 1;
+                        if idx1 = C_NUM_CHANNELS then
+                            state1 := STATE_IDLE;
+                            m_axis_tlast <= is_last;
+                           -- m_axis_tlast <= '0';
+                        else
+                            m_axis_tlast <= '0';
                         end if;
-               end case;
-            end if;
-        end process;
-          
-                
-
-    
-
+                        
+                end case;
+            end if;    
+         end process;     
+           
         
-        
-    
    end implementation;
     
   

@@ -9,7 +9,7 @@ TEST_EXAMPLES =
 
 
 
-
+export DEVICE_MODULES_DIR = /root/rfx_recorder
 
 
 ## /////////////////////////////////////////////////////////////////

@@ -8,6 +8,8 @@ VENDOR = rfx
 
 ## PROJECTS ##
 
+export DEVICE_BOOT_DIR = /root/rfx_recorder
+export DEVICE_MODULES_DIR = /root/rfx_recorder
 
 vivado_PROJECTS = recorder
 

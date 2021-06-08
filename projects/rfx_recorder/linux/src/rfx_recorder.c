@@ -34,7 +34,7 @@
 #include <linux/delay.h>
 
 #define SUCCESS 0
-#define FIFO_LEN 16384
+#define FIFO_LEN 65536
 
 //static struct platform_device *s_pdev = 0;
 // static int s_device_open = 0;
@@ -49,6 +49,7 @@ static unsigned int device_poll(struct file *file, struct poll_table_struct *p);
 
 static int deviceAllocated = 0;
 
+unsigned long flags = 0;
 static struct file_operations fops = {
     .read = device_read,
     .write = device_write,
@@ -60,8 +61,8 @@ static struct file_operations fops = {
     .poll = device_poll,
 };
 
-#define MAX_DMA_BUFFERS 80
-#define DMA_BUFSIZE 1600000
+#define MAX_DMA_BUFFERS 800
+#define DMA_BUFSIZE 160000
 
 struct rfx_recorder_dev {
     struct platform_device *pdev;
@@ -69,13 +70,16 @@ struct rfx_recorder_dev {
     int busy;
     int irq;
     
-    	void * iomap_command_register;
+    	void * iomap_autozero_mul_register;
+	void * iomap_autozero_smp_register;
+	void * iomap_command_register;
 	void * iomap_decimator_register;
 	void * iomap_dma_size_register;
 	void * iomap_event_code_register;
 	void * iomap_mode_register;
 	void * iomap_pts_register;
 	void * iomap_stream_decimator_register;
+	void * iomap_autozero_register;
 	void * iomap_counter_register;
 	void * iomap_status_register;
 	void * iomap_stream_fifo;
@@ -84,7 +88,7 @@ struct rfx_recorder_dev {
     
     struct semaphore sem;     /* mutual exclusion semaphore     */
     spinlock_t spinLock;     /* spinlock     */
-    spinlock_t checkSpinLock;     /* spinlock     */
+    spinlock_t checkSpinLock;/* spinlock for FIFO check   */
     u32 *fifoBuffer;
     u32 bufSize;
     u32 rIdx, wIdx, bufCount;
@@ -129,9 +133,9 @@ static void clearFifo(void *dev, void *dev1)
    writeFifo(dev,ISR,0xFFFFFFFF);
    writeFifo(dev,RDFR,0xa5);
    writeFifo(dev,IER,0x04000000);
-//   occ = readFifo(dev,RDFO); 
-//   for(i = 0; i < occ; i++)
-//       readFifo(dev,RDFD4);
+   occ = readFifo(dev,RDFO); 
+   for(i = 0; i < occ; i++)
+       readFifo(dev,RDFD4);
 }
 
 
@@ -143,33 +147,35 @@ static void dma_start_transfer(struct dma_chan *chan, struct completion *cmp, dm
 
 int writeBuf(struct rfx_recorder_dev *dev, u32 sample)
 {
-    spin_lock_irq(&dev->spinLock);
+    spin_lock_irqsave(&dev->spinLock,flags);
     if(dev->bufCount >= dev->bufSize)
     {
-        printk(KERN_DEBUG "ADC FIFO BUFFER OVERFLOW!\n");
-	spin_unlock_irq(&dev->spinLock);
+        printk(KERN_DEBUG "ADC FIFO BUFFER OVERFLOW!  %d  %d\n", dev->bufCount, dev->bufSize);
+	spin_unlock_irqrestore(&dev->spinLock, flags);
 	return -1;
     }
     else
     {
         dev->fifoBuffer[dev->wIdx] = sample;
         dev->wIdx = (dev->wIdx + 1) % dev->bufSize;
+ //   spin_lock_irqsave(&dev->spinLock,flags);
         dev->bufCount++;
+  //     spin_unlock_irqrestore(&dev->spinLock, flags);
     }
-    spin_unlock_irq(&dev->spinLock);
+    spin_unlock_irqrestore(&dev->spinLock, flags);
     return 0;
 } 
 
 int writeBufSet(struct rfx_recorder_dev *dev, u32 *buf, int nSamples, int check)
 {
     int i;
-    spin_lock_irq(&dev->spinLock);
+//    spin_lock_irq(&dev->spinLock);
     for(i = 0; i < nSamples; i++)
     {
       if(check && (dev->bufCount >= dev->bufSize))
 	{
 	    printk(KERN_DEBUG "ADC FIFO BUFFER OVERFLOW  %d    %d!\n", dev->bufCount, dev->bufSize);
-	    spin_unlock_irq(&dev->spinLock);
+//	    spin_unlock_irq(&dev->spinLock);
 	    return -1;
 	}
 	else
@@ -179,14 +185,14 @@ int writeBufSet(struct rfx_recorder_dev *dev, u32 *buf, int nSamples, int check)
 	    dev->bufCount++;
 	}
     }
-    spin_unlock_irq(&dev->spinLock);
+//    spin_unlock_irq(&dev->spinLock);
     return 0;
 } 
 
 u32 readBuf(struct rfx_recorder_dev *dev)
 {
     u32 data;
-    spin_lock_irq(&dev->spinLock);
+    spin_lock_irqsave(&dev->spinLock, flags);
     if(dev->bufCount <= 0)
     {
         printk(KERN_DEBUG "ADC FIFO BUFFER UNDERFLOW!\n");  //Should never happen
@@ -196,9 +202,11 @@ u32 readBuf(struct rfx_recorder_dev *dev)
     {
         data = dev->fifoBuffer[dev->rIdx];
         dev->rIdx = (dev->rIdx+1) % dev->bufSize;
+    //spin_lock_irqsave(&dev->spinLock, flags);
         dev->bufCount--;
+    //spin_unlock_irqrestore(&dev->spinLock,flags);
     }
-    spin_unlock_irq(&dev->spinLock);
+    spin_unlock_irqrestore(&dev->spinLock,flags);
     return data;
 }
 
@@ -304,6 +312,41 @@ static u32 Read(void *addr, enum AxiStreamFifo_Register op ) {
     return *(u32 *)(addr+op);
 }
 
+
+#ifdef HAS_FIFO_INTERRUPT
+    static u32 prevOcc = 0;
+
+static int checkFifo(struct rfx_recorder_dev *dev)
+{
+    void* fifo  = dev->iomap_stream_fifo;
+    void* fifo1 = dev->iomap1_stream_fifo;
+
+    //spin_lock_irq(&dev->spinLock);
+    u32 occ = Read(fifo,RDFO);
+    if(occ > prevOcc)
+    {
+      prevOcc = occ;
+      printk("FIFO LEN INCREASED %d\n", occ);
+    }
+      
+    int i;
+    for(i = 0; i < occ; i++)
+    {
+        u32 currSample = Read(fifo1,RDFD4);
+        if(writeBuf(dev, currSample) < 0) //In case of ADC FIFO overflow, abort data readout from FPGA
+        {
+          dev->fifoOverflow = 1;
+          spin_unlock_irq(&dev->spinLock);
+          return 0;
+        }
+     }
+    //spin_unlock_irq(&dev->spinLock);
+    return occ;
+}
+
+#endif
+
+
 // interrupt handler //
 irqreturn_t IRQ_cb(int irq, void *dev_id, struct pt_regs *regs) {
     struct rfx_recorder_dev *dev =  dev_id;
@@ -311,24 +354,27 @@ irqreturn_t IRQ_cb(int irq, void *dev_id, struct pt_regs *regs) {
     static int isFirst = 1;
     //Check whether he cause of interrupt has been reveive overrun
     Write(dev->iomap_stream_fifo,ISR,0xFFFFFFFF);
-    //Write(dev->iomap_stream_fifo,IER,0x00000000);
+    Write(dev->iomap_stream_fifo,IER,0x00000000);
 
     void* fifo  = dev->iomap_stream_fifo;
     void* fifo1 = dev->iomap1_stream_fifo;
 
     static u32 prev1, prev2;
-
+    
     u32 occ = Read(fifo,RDFO);
     {
         isFirst = 0;
     }
-
-//printk("--INTERRUPT: Available samples: %d\n", occ);    
-    
+    if(occ > prevOcc)
+    {
+      prevOcc = occ;
+      printk("FIFO LEN INCREASED %d\n", occ);
+    }
     
     if(occ >= FIFO_LEN)
     {
         dev->fifoOverflow = 1;
+        Write(dev->iomap_stream_fifo,IER,0x00000000);
         wake_up(&dev->readq);
         //When oveflow is detected, disable interrupts
     }
@@ -337,19 +383,21 @@ irqreturn_t IRQ_cb(int irq, void *dev_id, struct pt_regs *regs) {
     for(i = 0; i < occ; i++)
     {
         u32 currSample = Read(fifo1,RDFD4);
+        //printk("%d ", dev->bufCount);
         if(writeBuf(dev, currSample) < 0) //In case of ADC FIFO overflow, abort data readout from FPGA
 	{
+          printk("FPGA FIFO OVERFLOW!\n");
 	  Write(dev->iomap_stream_fifo,IER,0x00000000);
 	  return IRQ_HANDLED;
 	}
      }
     wake_up(&dev->readq);
-/*
+
     if(dev->fifoHalfInterrupt)
         Write(dev->iomap_stream_fifo,IER,0x00100000);
     else
         Write(dev->iomap_stream_fifo,IER,0x04000000);
-*/
+
 //printk("--INTERRUPT: Done\n");    
     return IRQ_HANDLED;
 }
@@ -362,7 +410,10 @@ irqreturn_t IRQ_cb(int irq, void *dev_id, struct pt_regs *regs) {
 
 // OPEN //
 static int device_open(struct inode *inode, struct file *file)
-{    
+{   
+  prevOcc = 0;
+  
+  
     if(!file->private_data) {
         u32 off;
 
@@ -404,29 +455,8 @@ static int device_release(struct inode *inode, struct file *file)
         printk(KERN_DEBUG "CLOSE\n");
         wake_up(&dev->readq);
     }
+    //dev->iomap_command_register = 16;
     return 0;
-}
-
-static int checkFifo(struct rfx_recorder_dev *dev)
-{
-    void* fifo  = dev->iomap_stream_fifo;
-    void* fifo1 = dev->iomap1_stream_fifo;
-
-    spin_lock_irq(&dev->checkSpinLock);
-    u32 occ = Read(fifo,RDFO);
-    int i;
-    for(i = 0; i < occ; i++)
-    {
-        u32 currSample = Read(fifo1,RDFD4);
-        if(writeBuf(dev, currSample) < 0) //In case of ADC FIFO overflow, abort data readout from FPGA
-        {
-          dev->fifoOverflow = 1;
-          spin_unlock_irq(&dev->checkSpinLock);
-          return 0;
-        }
-     }
-    spin_unlock_irq(&dev->checkSpinLock);
-    return occ;
 }
 
 
@@ -441,8 +471,8 @@ static ssize_t device_read(struct file *filp, char *buffer, size_t length,
 #ifdef HAS_FIFO_INTERRUPT
     if(dev->fifoOverflow)
         return -1;
+    //checkFifo(dev);
 #endif
-    checkFifo(dev);
     while(dev->bufCount == 0)
     {
         if(filp->f_flags & O_NONBLOCK)
@@ -452,12 +482,13 @@ static ssize_t device_read(struct file *filp, char *buffer, size_t length,
 	if(!dev->started)
 	    return 0;
    }
-
     u32 occ = dev->bufCount;
+  //  spin_lock_irqsave(&dev->spinLock, flags);
     for(i=0; i < min(length/sizeof(u32), occ); ++i) {
         u32 curr = readBuf(dev);
 	put_user(curr, b32++);
     }
+ //   spin_unlock_irqrestore(&dev->spinLock, flags);
     return i*sizeof(u32);
 }
 
@@ -620,7 +651,27 @@ static long device_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	  return 0;
       }
       
-    	case RFX_RECORDER_GET_COMMAND_REGISTER:
+    	case RFX_RECORDER_GET_AUTOZERO_MUL_REGISTER:
+	{
+		copy_to_user ((void __user *)arg, dev->iomap_autozero_mul_register, sizeof(u32));
+		return 0;
+	}
+	case RFX_RECORDER_SET_AUTOZERO_MUL_REGISTER:
+	{
+		copy_from_user (dev->iomap_autozero_mul_register, (void __user *)arg, sizeof(u32));
+		return 0;
+	}
+	case RFX_RECORDER_GET_AUTOZERO_SMP_REGISTER:
+	{
+		copy_to_user ((void __user *)arg, dev->iomap_autozero_smp_register, sizeof(u32));
+		return 0;
+	}
+	case RFX_RECORDER_SET_AUTOZERO_SMP_REGISTER:
+	{
+		copy_from_user (dev->iomap_autozero_smp_register, (void __user *)arg, sizeof(u32));
+		return 0;
+	}
+	case RFX_RECORDER_GET_COMMAND_REGISTER:
 	{
 		copy_to_user ((void __user *)arg, dev->iomap_command_register, sizeof(u32));
 		return 0;
@@ -690,6 +741,16 @@ static long device_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		copy_from_user (dev->iomap_stream_decimator_register, (void __user *)arg, sizeof(u32));
 		return 0;
 	}
+	case RFX_RECORDER_GET_AUTOZERO_REGISTER:
+	{
+		copy_to_user ((void __user *)arg, dev->iomap_autozero_register, sizeof(u32));
+		return 0;
+	}
+	case RFX_RECORDER_SET_AUTOZERO_REGISTER:
+	{
+		copy_from_user (dev->iomap_autozero_register, (void __user *)arg, sizeof(u32));
+		return 0;
+	}
 	case RFX_RECORDER_GET_COUNTER_REGISTER:
 	{
 		copy_to_user ((void __user *)arg, dev->iomap_counter_register, sizeof(u32));
@@ -725,12 +786,17 @@ static long device_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case RFX_RECORDER_CLEAR_STREAM_FIFO:
 	{
 		clearFifo(dev->iomap_stream_fifo,dev->iomap1_stream_fifo);
+                dev->wIdx = 0;
+                dev->rIdx = 0;
+                dev->bufCount = 0;
 		return 0;
 	}
 	case RFX_RECORDER_GET_REGISTERS:
 	{
 		struct rfx_recorder_registers currConf;
 		memset(&currConf, 0, sizeof(currConf));
+		currConf.autozero_mul_register = *((u32 *)dev->iomap_autozero_mul_register);
+		currConf.autozero_smp_register = *((u32 *)dev->iomap_autozero_smp_register);
 		currConf.command_register = *((u32 *)dev->iomap_command_register);
 		currConf.decimator_register = *((u32 *)dev->iomap_decimator_register);
 		currConf.dma_size_register = *((u32 *)dev->iomap_dma_size_register);
@@ -738,6 +804,7 @@ static long device_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		currConf.mode_register = *((u32 *)dev->iomap_mode_register);
 		currConf.pts_register = *((u32 *)dev->iomap_pts_register);
 		currConf.stream_decimator_register = *((u32 *)dev->iomap_stream_decimator_register);
+		currConf.autozero_register = *((u32 *)dev->iomap_autozero_register);
 		currConf.counter_register = *((u32 *)dev->iomap_counter_register);
 		currConf.status_register = *((u32 *)dev->iomap_status_register);
 		copy_to_user ((void __user *)arg, &currConf, sizeof(currConf));
@@ -746,6 +813,10 @@ static long device_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	{
 		struct rfx_recorder_registers currConf;
 		copy_from_user (&currConf, (void __user *)arg, sizeof(currConf));
+		if(currConf.autozero_mul_register_enable)
+			*((u32 *)dev->iomap_autozero_mul_register) = currConf.autozero_mul_register;
+		if(currConf.autozero_smp_register_enable)
+			*((u32 *)dev->iomap_autozero_smp_register) = currConf.autozero_smp_register;
 		if(currConf.command_register_enable)
 			*((u32 *)dev->iomap_command_register) = currConf.command_register;
 		if(currConf.decimator_register_enable)
@@ -760,6 +831,8 @@ static long device_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			*((u32 *)dev->iomap_pts_register) = currConf.pts_register;
 		if(currConf.stream_decimator_register_enable)
 			*((u32 *)dev->iomap_stream_decimator_register) = currConf.stream_decimator_register;
+		if(currConf.autozero_register_enable)
+			*((u32 *)dev->iomap_autozero_register) = currConf.autozero_register;
 		if(currConf.counter_register_enable)
 			*((u32 *)dev->iomap_counter_register) = currConf.counter_register;
 		if(currConf.status_register_enable)
@@ -771,15 +844,15 @@ static long device_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
  
      case RFX_RECORDER_FIFO_INT_HALF_SIZE:
         dev->fifoHalfInterrupt = 1;
-        //Write(dev->iomap_data_fifo,IER,0x00100000);
+        Write(dev->iomap_stream_fifo,IER,0x00100000);
         return 0;
     case RFX_RECORDER_FIFO_INT_FIRST_SAMPLE:
         dev->fifoHalfInterrupt = 0;
-        //Write(dev->iomap_data_fifo,IER,0x04000000);
+        Write(dev->iomap_stream_fifo,IER,0x04000000);
         return 0;
     case RFX_RECORDER_FIFO_FLUSH:
 	  IRQ_cb(0, dev, 0);
-      //  Write(dev->iomap_data_fifo,IER,0x04000000);
+          Write(dev->iomap_stream_fifo,IER,0x04000000);
     case RFX_RECORDER_START_READ:
 	  dev->started = 1;
         return 0;
@@ -928,48 +1001,60 @@ static int rfx_recorder_probe(struct platform_device *pdev)
 	 	case 1:
 		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 		off = r_mem->start & ~PAGE_MASK;
+		staticPrivateInfo.iomap_autozero_mul_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
+	case 2:
+		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+		off = r_mem->start & ~PAGE_MASK;
+		staticPrivateInfo.iomap_autozero_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
+	case 3:
+		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+		off = r_mem->start & ~PAGE_MASK;
+		staticPrivateInfo.iomap_autozero_smp_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
+	case 4:
+		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+		off = r_mem->start & ~PAGE_MASK;
+		staticPrivateInfo.iomap_command_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
+	case 5:
+		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+		off = r_mem->start & ~PAGE_MASK;
+		staticPrivateInfo.iomap_counter_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
+	case 6:
+		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+		off = r_mem->start & ~PAGE_MASK;
+		staticPrivateInfo.iomap_decimator_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
+	case 7:
+		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+		off = r_mem->start & ~PAGE_MASK;
+		staticPrivateInfo.iomap_dma_size_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
+	case 8:
+		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+		off = r_mem->start & ~PAGE_MASK;
+		staticPrivateInfo.iomap_event_code_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
+	case 9:
+		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+		off = r_mem->start & ~PAGE_MASK;
+		staticPrivateInfo.iomap_mode_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
+	case 10:
+		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+		off = r_mem->start & ~PAGE_MASK;
+		staticPrivateInfo.iomap_pts_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
+	case 11:
+		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+		off = r_mem->start & ~PAGE_MASK;
+		staticPrivateInfo.iomap_status_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
+	case 12:
+		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+		off = r_mem->start & ~PAGE_MASK;
+		staticPrivateInfo.iomap_stream_decimator_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
+	case 13:
+		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+		off = r_mem->start & ~PAGE_MASK;
 		staticPrivateInfo.iomap_stream_fifo = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff);
 		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 1);
 		off = r_mem->start & ~PAGE_MASK;
 		staticPrivateInfo.iomap1_stream_fifo = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff);
 		setIrq(pdev);
 	break;
-	case 2:
-		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-		off = r_mem->start & ~PAGE_MASK;
-		staticPrivateInfo.iomap_command_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
-	case 3:
-		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-		off = r_mem->start & ~PAGE_MASK;
-		staticPrivateInfo.iomap_counter_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
-	case 4:
-		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-		off = r_mem->start & ~PAGE_MASK;
-		staticPrivateInfo.iomap_decimator_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
-	case 5:
-		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-		off = r_mem->start & ~PAGE_MASK;
-		staticPrivateInfo.iomap_dma_size_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
-	case 6:
-		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-		off = r_mem->start & ~PAGE_MASK;
-		staticPrivateInfo.iomap_event_code_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
-	case 7:
-		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-		off = r_mem->start & ~PAGE_MASK;
-		staticPrivateInfo.iomap_mode_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
-	case 8:
-		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-		off = r_mem->start & ~PAGE_MASK;
-		staticPrivateInfo.iomap_pts_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
-	case 9:
-		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-		off = r_mem->start & ~PAGE_MASK;
-		staticPrivateInfo.iomap_status_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
-	case 10:
-		r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-		off = r_mem->start & ~PAGE_MASK;
-		staticPrivateInfo.iomap_stream_decimator_register = devm_ioremap(&pdev->dev,r_mem->start+off,0xffff); break;
 
 
 	 default: printk("ERROR: Unexpected rfx_recorder_probe call\n");

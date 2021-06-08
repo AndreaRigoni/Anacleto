@@ -626,7 +626,7 @@
         <spirit:instanceName>event_code_register</spirit:instanceName>
         <spirit:componentRef spirit:library="user" spirit:name="axi_cfg_register" spirit:vendor="pavel-demin" spirit:version="1.0"/>
         <spirit:configurableElementValues>
-          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_trig_event_code_0</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_event_code_register_0</spirit:configurableElementValue>
           <spirit:configurableElementValue spirit:referenceId="CFG_DATA_WIDTH">32</spirit:configurableElementValue>
         </spirit:configurableElementValues>
       </spirit:componentInstance>
@@ -634,7 +634,7 @@
         <spirit:instanceName>counter_register</spirit:instanceName>
         <spirit:componentRef spirit:library="user" spirit:name="axi_sts_register" spirit:vendor="pavel-demin" spirit:version="1.0"/>
         <spirit:configurableElementValues>
-          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_axi_sts_register_0_1</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_counter_register_0</spirit:configurableElementValue>
           <spirit:configurableElementValue spirit:referenceId="STS_DATA_WIDTH">32</spirit:configurableElementValue>
         </spirit:configurableElementValues>
       </spirit:componentInstance>
@@ -669,39 +669,24 @@
         </spirit:configurableElementValues>
       </spirit:componentInstance>
       <spirit:componentInstance>
-        <spirit:instanceName>splitter_0</spirit:instanceName>
-        <spirit:componentRef spirit:library="module_ref" spirit:name="splitter" spirit:vendor="xilinx.com" spirit:version="1.0"/>
-        <spirit:configurableElementValues>
-          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_splitter_0_0</spirit:configurableElementValue>
-          <spirit:configurableElementValue spirit:referenceId="bd:referenceName">splitter</spirit:configurableElementValue>
-          <spirit:configurableElementValue spirit:referenceId="bd:subInstancePath"></spirit:configurableElementValue>
-          <spirit:configurableElementValue spirit:referenceId="bd:referenceType">hdl</spirit:configurableElementValue>
-          <spirit:configurableElementValue spirit:referenceId="bd:BoundaryCRC">0x0</spirit:configurableElementValue>
-        </spirit:configurableElementValues>
-      </spirit:componentInstance>
-      <spirit:componentInstance>
         <spirit:instanceName>stream_decimator_register</spirit:instanceName>
         <spirit:componentRef spirit:library="user" spirit:name="axi_cfg_register" spirit:vendor="pavel-demin" spirit:version="1.0"/>
         <spirit:configurableElementValues>
-          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_axi_cfg_register_0_0</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_stream_decimator_register_0</spirit:configurableElementValue>
           <spirit:configurableElementValue spirit:referenceId="CFG_DATA_WIDTH">32</spirit:configurableElementValue>
         </spirit:configurableElementValues>
       </spirit:componentInstance>
       <spirit:componentInstance>
-        <spirit:instanceName>axis_decimator_1</spirit:instanceName>
-        <spirit:componentRef spirit:library="user" spirit:name="axis_decimator" spirit:vendor="pavel-demin" spirit:version="1.0"/>
-        <spirit:configurableElementValues>
-          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_axis_decimator_1_0</spirit:configurableElementValue>
-        </spirit:configurableElementValues>
-      </spirit:componentInstance>
-      <spirit:componentInstance>
-        <spirit:instanceName>axi_fifo_mm_s_0</spirit:instanceName>
+        <spirit:instanceName>stream_fifo</spirit:instanceName>
         <spirit:componentRef spirit:library="ip" spirit:name="axi_fifo_mm_s" spirit:vendor="xilinx.com" spirit:version="4.1"/>
         <spirit:configurableElementValues>
           <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_axi_fifo_mm_s_0_0</spirit:configurableElementValue>
           <spirit:configurableElementValue spirit:referenceId="C_DATA_INTERFACE_TYPE">1</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="C_RX_FIFO_PE_THRESHOLD">2</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="C_RX_FIFO_PF_THRESHOLD">507</spirit:configurableElementValue>
           <spirit:configurableElementValue spirit:referenceId="C_TX_FIFO_PE_THRESHOLD">2</spirit:configurableElementValue>
           <spirit:configurableElementValue spirit:referenceId="C_TX_FIFO_PF_THRESHOLD">507</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="C_RX_FIFO_DEPTH">8192</spirit:configurableElementValue>
           <spirit:configurableElementValue spirit:referenceId="C_TX_FIFO_DEPTH">512</spirit:configurableElementValue>
           <spirit:configurableElementValue spirit:referenceId="C_USE_TX_DATA">0</spirit:configurableElementValue>
           <spirit:configurableElementValue spirit:referenceId="C_USE_RX_DATA">1</spirit:configurableElementValue>
@@ -716,21 +701,10 @@
         </spirit:configurableElementValues>
       </spirit:componentInstance>
       <spirit:componentInstance>
-        <spirit:instanceName>recorder_0</spirit:instanceName>
-        <spirit:componentRef spirit:library="module_ref" spirit:name="recorder" spirit:vendor="xilinx.com" spirit:version="1.0"/>
-        <spirit:configurableElementValues>
-          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_recorder_0_0</spirit:configurableElementValue>
-          <spirit:configurableElementValue spirit:referenceId="bd:referenceName">recorder</spirit:configurableElementValue>
-          <spirit:configurableElementValue spirit:referenceId="bd:subInstancePath"></spirit:configurableElementValue>
-          <spirit:configurableElementValue spirit:referenceId="bd:referenceType">hdl</spirit:configurableElementValue>
-          <spirit:configurableElementValue spirit:referenceId="bd:BoundaryCRC">0x0</spirit:configurableElementValue>
-        </spirit:configurableElementValues>
-      </spirit:componentInstance>
-      <spirit:componentInstance>
         <spirit:instanceName>status_register</spirit:instanceName>
         <spirit:componentRef spirit:library="user" spirit:name="axi_sts_register" spirit:vendor="pavel-demin" spirit:version="1.0"/>
         <spirit:configurableElementValues>
-          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_axi_sts_register_0_0</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_status_register_0</spirit:configurableElementValue>
           <spirit:configurableElementValue spirit:referenceId="STS_DATA_WIDTH">32</spirit:configurableElementValue>
         </spirit:configurableElementValues>
       </spirit:componentInstance>
@@ -777,7 +751,7 @@
         <spirit:instanceName>dma_size_register</spirit:instanceName>
         <spirit:componentRef spirit:library="user" spirit:name="axi_cfg_register" spirit:vendor="pavel-demin" spirit:version="1.0"/>
         <spirit:configurableElementValues>
-          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_packetizer_0</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_dma_size_register_0</spirit:configurableElementValue>
           <spirit:configurableElementValue spirit:referenceId="CFG_DATA_WIDTH">32</spirit:configurableElementValue>
         </spirit:configurableElementValues>
       </spirit:componentInstance>
@@ -785,7 +759,7 @@
         <spirit:instanceName>pts_register</spirit:instanceName>
         <spirit:componentRef spirit:library="user" spirit:name="axi_cfg_register" spirit:vendor="pavel-demin" spirit:version="1.0"/>
         <spirit:configurableElementValues>
-          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_post_register_0</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_pts_register_0</spirit:configurableElementValue>
           <spirit:configurableElementValue spirit:referenceId="CFG_DATA_WIDTH">32</spirit:configurableElementValue>
         </spirit:configurableElementValues>
       </spirit:componentInstance>
@@ -794,6 +768,95 @@
         <spirit:componentRef spirit:library="ip" spirit:name="proc_sys_reset" spirit:vendor="xilinx.com" spirit:version="5.0"/>
         <spirit:configurableElementValues>
           <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_rst_red_pitaya_ps_125M_0</spirit:configurableElementValue>
+        </spirit:configurableElementValues>
+      </spirit:componentInstance>
+      <spirit:componentInstance>
+        <spirit:instanceName>axis_packetizer_0</spirit:instanceName>
+        <spirit:componentRef spirit:library="user" spirit:name="axis_packetizer" spirit:vendor="pavel-demin" spirit:version="1.0"/>
+        <spirit:configurableElementValues>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_axis_packetizer_0_0</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="CONTINUOUS">TRUE</spirit:configurableElementValue>
+        </spirit:configurableElementValues>
+      </spirit:componentInstance>
+      <spirit:componentInstance>
+        <spirit:instanceName>xlconstant_0</spirit:instanceName>
+        <spirit:componentRef spirit:library="ip" spirit:name="xlconstant" spirit:vendor="xilinx.com" spirit:version="1.1"/>
+        <spirit:configurableElementValues>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_xlconstant_0_0</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="CONST_WIDTH">32</spirit:configurableElementValue>
+        </spirit:configurableElementValues>
+      </spirit:componentInstance>
+      <spirit:componentInstance>
+        <spirit:instanceName>splitter_0</spirit:instanceName>
+        <spirit:componentRef spirit:library="module_ref" spirit:name="splitter" spirit:vendor="xilinx.com" spirit:version="1.0"/>
+        <spirit:configurableElementValues>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_splitter_0_0</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="bd:referenceName">splitter</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="bd:subInstancePath"></spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="bd:referenceType">hdl</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="bd:BoundaryCRC">0x0</spirit:configurableElementValue>
+        </spirit:configurableElementValues>
+      </spirit:componentInstance>
+      <spirit:componentInstance>
+        <spirit:instanceName>autozero_smp_register</spirit:instanceName>
+        <spirit:componentRef spirit:library="user" spirit:name="axi_cfg_register" spirit:vendor="pavel-demin" spirit:version="1.0"/>
+        <spirit:configurableElementValues>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_axi_cfg_register_0_0</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="CFG_DATA_WIDTH">32</spirit:configurableElementValue>
+        </spirit:configurableElementValues>
+      </spirit:componentInstance>
+      <spirit:componentInstance>
+        <spirit:instanceName>autozero_mul_register</spirit:instanceName>
+        <spirit:componentRef spirit:library="user" spirit:name="axi_cfg_register" spirit:vendor="pavel-demin" spirit:version="1.0"/>
+        <spirit:configurableElementValues>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_axi_cfg_register_0_1</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="CFG_DATA_WIDTH">32</spirit:configurableElementValue>
+        </spirit:configurableElementValues>
+      </spirit:componentInstance>
+      <spirit:componentInstance>
+        <spirit:instanceName>autozero_register</spirit:instanceName>
+        <spirit:componentRef spirit:library="user" spirit:name="axi_sts_register" spirit:vendor="pavel-demin" spirit:version="1.0"/>
+        <spirit:configurableElementValues>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_axi_sts_register_0_0</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="STS_DATA_WIDTH">32</spirit:configurableElementValue>
+        </spirit:configurableElementValues>
+      </spirit:componentInstance>
+      <spirit:componentInstance>
+        <spirit:instanceName>axis_decimator_2</spirit:instanceName>
+        <spirit:componentRef spirit:library="user" spirit:name="axis_decimator" spirit:vendor="pavel-demin" spirit:version="1.0"/>
+        <spirit:configurableElementValues>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_axis_decimator_2_0</spirit:configurableElementValue>
+        </spirit:configurableElementValues>
+      </spirit:componentInstance>
+      <spirit:componentInstance>
+        <spirit:instanceName>xlconstant_1</spirit:instanceName>
+        <spirit:componentRef spirit:library="ip" spirit:name="xlconstant" spirit:vendor="xilinx.com" spirit:version="1.1"/>
+        <spirit:configurableElementValues>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_xlconstant_1_0</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="CONST_WIDTH">32</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="CONST_VAL">125</spirit:configurableElementValue>
+        </spirit:configurableElementValues>
+      </spirit:componentInstance>
+      <spirit:componentInstance>
+        <spirit:instanceName>integrator_0</spirit:instanceName>
+        <spirit:componentRef spirit:library="module_ref" spirit:name="integrator" spirit:vendor="xilinx.com" spirit:version="1.0"/>
+        <spirit:configurableElementValues>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_integrator_0_0</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="bd:referenceName">integrator</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="bd:subInstancePath"></spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="bd:referenceType">hdl</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="bd:BoundaryCRC">0x0</spirit:configurableElementValue>
+        </spirit:configurableElementValues>
+      </spirit:componentInstance>
+      <spirit:componentInstance>
+        <spirit:instanceName>recorder_0</spirit:instanceName>
+        <spirit:componentRef spirit:library="module_ref" spirit:name="recorder" spirit:vendor="xilinx.com" spirit:version="1.0"/>
+        <spirit:configurableElementValues>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_recorder_0_0</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="bd:referenceName">recorder</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="bd:subInstancePath"></spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="bd:referenceType">hdl</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="bd:BoundaryCRC">0x0</spirit:configurableElementValue>
         </spirit:configurableElementValues>
       </spirit:componentInstance>
     </spirit:componentInstances>
@@ -884,16 +947,6 @@
         <spirit:activeInterface spirit:busRef="S00_AXI" spirit:componentRef="axi_smc"/>
       </spirit:interconnection>
       <spirit:interconnection>
-        <spirit:name>recorder_0_m_axis</spirit:name>
-        <spirit:activeInterface spirit:busRef="m_axis" spirit:componentRef="recorder_0"/>
-        <spirit:activeInterface spirit:busRef="S_AXIS" spirit:componentRef="axis_data_fifo_0"/>
-      </spirit:interconnection>
-      <spirit:interconnection>
-        <spirit:name>resampler_0_m_axis</spirit:name>
-        <spirit:activeInterface spirit:busRef="m_axis" spirit:componentRef="resampler_0"/>
-        <spirit:activeInterface spirit:busRef="s_axis" spirit:componentRef="splitter_0"/>
-      </spirit:interconnection>
-      <spirit:interconnection>
         <spirit:name>splitter_0_m_axis_1</spirit:name>
         <spirit:activeInterface spirit:busRef="m_axis_1" spirit:componentRef="splitter_0"/>
         <spirit:activeInterface spirit:busRef="S_AXIS" spirit:componentRef="axis_decimator_0"/>
@@ -904,29 +957,59 @@
         <spirit:activeInterface spirit:busRef="S_AXI" spirit:componentRef="stream_decimator_register"/>
       </spirit:interconnection>
       <spirit:interconnection>
-        <spirit:name>splitter_0_m_axis_2</spirit:name>
-        <spirit:activeInterface spirit:busRef="m_axis_2" spirit:componentRef="splitter_0"/>
-        <spirit:activeInterface spirit:busRef="S_AXIS" spirit:componentRef="axis_decimator_1"/>
-      </spirit:interconnection>
-      <spirit:interconnection>
-        <spirit:name>axis_decimator_1_M_AXIS</spirit:name>
-        <spirit:activeInterface spirit:busRef="M_AXIS" spirit:componentRef="axis_decimator_1"/>
-        <spirit:activeInterface spirit:busRef="s_axis_stream" spirit:componentRef="recorder_0"/>
-      </spirit:interconnection>
-      <spirit:interconnection>
         <spirit:name>red_pitaya_ps_axi_periph_M07_AXI</spirit:name>
         <spirit:activeInterface spirit:busRef="M07_AXI" spirit:componentRef="red_pitaya_ps_axi_periph"/>
-        <spirit:activeInterface spirit:busRef="S_AXI" spirit:componentRef="axi_fifo_mm_s_0"/>
+        <spirit:activeInterface spirit:busRef="S_AXI" spirit:componentRef="stream_fifo"/>
       </spirit:interconnection>
       <spirit:interconnection>
         <spirit:name>red_pitaya_ps_axi_periph_M09_AXI</spirit:name>
         <spirit:activeInterface spirit:busRef="M09_AXI" spirit:componentRef="red_pitaya_ps_axi_periph"/>
-        <spirit:activeInterface spirit:busRef="S_AXI_FULL" spirit:componentRef="axi_fifo_mm_s_0"/>
+        <spirit:activeInterface spirit:busRef="S_AXI_FULL" spirit:componentRef="stream_fifo"/>
       </spirit:interconnection>
       <spirit:interconnection>
-        <spirit:name>recorder_0_m_axis_stream</spirit:name>
-        <spirit:activeInterface spirit:busRef="m_axis_stream" spirit:componentRef="recorder_0"/>
-        <spirit:activeInterface spirit:busRef="AXI_STR_RXD" spirit:componentRef="axi_fifo_mm_s_0"/>
+        <spirit:name>axis_packetizer_0_M_AXIS</spirit:name>
+        <spirit:activeInterface spirit:busRef="M_AXIS" spirit:componentRef="axis_packetizer_0"/>
+        <spirit:activeInterface spirit:busRef="AXI_STR_RXD" spirit:componentRef="stream_fifo"/>
+      </spirit:interconnection>
+      <spirit:interconnection>
+        <spirit:name>red_pitaya_ps_axi_periph_M12_AXI</spirit:name>
+        <spirit:activeInterface spirit:busRef="M12_AXI" spirit:componentRef="red_pitaya_ps_axi_periph"/>
+        <spirit:activeInterface spirit:busRef="S_AXI" spirit:componentRef="autozero_smp_register"/>
+      </spirit:interconnection>
+      <spirit:interconnection>
+        <spirit:name>red_pitaya_ps_axi_periph_M13_AXI</spirit:name>
+        <spirit:activeInterface spirit:busRef="M13_AXI" spirit:componentRef="red_pitaya_ps_axi_periph"/>
+        <spirit:activeInterface spirit:busRef="S_AXI" spirit:componentRef="autozero_mul_register"/>
+      </spirit:interconnection>
+      <spirit:interconnection>
+        <spirit:name>red_pitaya_ps_axi_periph_M14_AXI</spirit:name>
+        <spirit:activeInterface spirit:busRef="M14_AXI" spirit:componentRef="red_pitaya_ps_axi_periph"/>
+        <spirit:activeInterface spirit:busRef="S_AXI" spirit:componentRef="autozero_register"/>
+      </spirit:interconnection>
+      <spirit:interconnection>
+        <spirit:name>integrator_0_m_axis</spirit:name>
+        <spirit:activeInterface spirit:busRef="S_AXIS" spirit:componentRef="axis_packetizer_0"/>
+        <spirit:activeInterface spirit:busRef="m_axis" spirit:componentRef="integrator_0"/>
+      </spirit:interconnection>
+      <spirit:interconnection>
+        <spirit:name>splitter_0_m_axis_3</spirit:name>
+        <spirit:activeInterface spirit:busRef="m_axis_3" spirit:componentRef="splitter_0"/>
+        <spirit:activeInterface spirit:busRef="s_axis" spirit:componentRef="integrator_0"/>
+      </spirit:interconnection>
+      <spirit:interconnection>
+        <spirit:name>resampler_0_m_axis</spirit:name>
+        <spirit:activeInterface spirit:busRef="m_axis" spirit:componentRef="resampler_0"/>
+        <spirit:activeInterface spirit:busRef="S_AXIS" spirit:componentRef="axis_decimator_2"/>
+      </spirit:interconnection>
+      <spirit:interconnection>
+        <spirit:name>axis_decimator_2_M_AXIS</spirit:name>
+        <spirit:activeInterface spirit:busRef="M_AXIS" spirit:componentRef="axis_decimator_2"/>
+        <spirit:activeInterface spirit:busRef="s_axis" spirit:componentRef="splitter_0"/>
+      </spirit:interconnection>
+      <spirit:interconnection>
+        <spirit:name>recorder_0_m_axis</spirit:name>
+        <spirit:activeInterface spirit:busRef="m_axis" spirit:componentRef="recorder_0"/>
+        <spirit:activeInterface spirit:busRef="S_AXIS" spirit:componentRef="axis_data_fifo_0"/>
       </spirit:interconnection>
     </spirit:interconnections>
     <spirit:adHocConnections>
@@ -950,6 +1033,7 @@
         <spirit:internalPortReference spirit:componentRef="mode_register" spirit:portRef="cfg_data"/>
         <spirit:internalPortReference spirit:componentRef="highway_0" spirit:portRef="mode_cfg"/>
         <spirit:internalPortReference spirit:componentRef="resampler_0" spirit:portRef="mode_cfg"/>
+        <spirit:internalPortReference spirit:componentRef="integrator_0" spirit:portRef="mode_reg"/>
         <spirit:internalPortReference spirit:componentRef="recorder_0" spirit:portRef="mode_reg"/>
       </spirit:adHocConnection>
       <spirit:adHocConnection>
@@ -981,10 +1065,24 @@
         <spirit:internalPortReference spirit:componentRef="axi_dma_0" spirit:portRef="m_axi_s2mm_aclk"/>
         <spirit:internalPortReference spirit:componentRef="axis_data_fifo_0" spirit:portRef="s_axis_aclk"/>
         <spirit:internalPortReference spirit:componentRef="axi_dma_0" spirit:portRef="m_axi_sg_aclk"/>
-        <spirit:internalPortReference spirit:componentRef="splitter_0" spirit:portRef="aclk"/>
         <spirit:internalPortReference spirit:componentRef="stream_decimator_register" spirit:portRef="aclk"/>
-        <spirit:internalPortReference spirit:componentRef="axis_decimator_1" spirit:portRef="aclk"/>
-        <spirit:internalPortReference spirit:componentRef="axi_fifo_mm_s_0" spirit:portRef="s_axi_aclk"/>
+        <spirit:internalPortReference spirit:componentRef="stream_fifo" spirit:portRef="s_axi_aclk"/>
+        <spirit:internalPortReference spirit:componentRef="status_register" spirit:portRef="aclk"/>
+        <spirit:internalPortReference spirit:componentRef="axis_clock_converter_0" spirit:portRef="m_axis_aclk"/>
+        <spirit:internalPortReference spirit:componentRef="axis_decimator_0" spirit:portRef="aclk"/>
+        <spirit:internalPortReference spirit:componentRef="command_register" spirit:portRef="aclk"/>
+        <spirit:internalPortReference spirit:componentRef="decimator_register" spirit:portRef="aclk"/>
+        <spirit:internalPortReference spirit:componentRef="mode_register" spirit:portRef="aclk"/>
+        <spirit:internalPortReference spirit:componentRef="dma_size_register" spirit:portRef="aclk"/>
+        <spirit:internalPortReference spirit:componentRef="pts_register" spirit:portRef="aclk"/>
+        <spirit:internalPortReference spirit:componentRef="rst_red_pitaya_ps_125M" spirit:portRef="slowest_sync_clk"/>
+        <spirit:internalPortReference spirit:componentRef="axis_packetizer_0" spirit:portRef="aclk"/>
+        <spirit:internalPortReference spirit:componentRef="splitter_0" spirit:portRef="aclk"/>
+        <spirit:internalPortReference spirit:componentRef="autozero_smp_register" spirit:portRef="aclk"/>
+        <spirit:internalPortReference spirit:componentRef="autozero_mul_register" spirit:portRef="aclk"/>
+        <spirit:internalPortReference spirit:componentRef="autozero_register" spirit:portRef="aclk"/>
+        <spirit:internalPortReference spirit:componentRef="axis_decimator_2" spirit:portRef="aclk"/>
+        <spirit:internalPortReference spirit:componentRef="integrator_0" spirit:portRef="aclk"/>
         <spirit:internalPortReference spirit:componentRef="recorder_0" spirit:portRef="aclk"/>
         <spirit:internalPortReference spirit:componentRef="red_pitaya_ps_axi_periph" spirit:portRef="ACLK"/>
         <spirit:internalPortReference spirit:componentRef="red_pitaya_ps_axi_periph" spirit:portRef="M00_ACLK"/>
@@ -1007,15 +1105,6 @@
         <spirit:internalPortReference spirit:componentRef="red_pitaya_ps_axi_periph" spirit:portRef="M17_ACLK"/>
         <spirit:internalPortReference spirit:componentRef="red_pitaya_ps_axi_periph" spirit:portRef="M18_ACLK"/>
         <spirit:internalPortReference spirit:componentRef="red_pitaya_ps_axi_periph" spirit:portRef="S00_ACLK"/>
-        <spirit:internalPortReference spirit:componentRef="status_register" spirit:portRef="aclk"/>
-        <spirit:internalPortReference spirit:componentRef="axis_clock_converter_0" spirit:portRef="m_axis_aclk"/>
-        <spirit:internalPortReference spirit:componentRef="axis_decimator_0" spirit:portRef="aclk"/>
-        <spirit:internalPortReference spirit:componentRef="command_register" spirit:portRef="aclk"/>
-        <spirit:internalPortReference spirit:componentRef="decimator_register" spirit:portRef="aclk"/>
-        <spirit:internalPortReference spirit:componentRef="mode_register" spirit:portRef="aclk"/>
-        <spirit:internalPortReference spirit:componentRef="dma_size_register" spirit:portRef="aclk"/>
-        <spirit:internalPortReference spirit:componentRef="pts_register" spirit:portRef="aclk"/>
-        <spirit:internalPortReference spirit:componentRef="rst_red_pitaya_ps_125M" spirit:portRef="slowest_sync_clk"/>
       </spirit:adHocConnection>
       <spirit:adHocConnection>
         <spirit:name>red_pitaya_ps_FCLK_RESET0_N</spirit:name>
@@ -1036,8 +1125,21 @@
         <spirit:internalPortReference spirit:componentRef="axi_smc" spirit:portRef="aresetn"/>
         <spirit:internalPortReference spirit:componentRef="axi_dma_0" spirit:portRef="axi_resetn"/>
         <spirit:internalPortReference spirit:componentRef="stream_decimator_register" spirit:portRef="aresetn"/>
-        <spirit:internalPortReference spirit:componentRef="axis_decimator_1" spirit:portRef="aresetn"/>
-        <spirit:internalPortReference spirit:componentRef="axi_fifo_mm_s_0" spirit:portRef="s_axi_aresetn"/>
+        <spirit:internalPortReference spirit:componentRef="stream_fifo" spirit:portRef="s_axi_aresetn"/>
+        <spirit:internalPortReference spirit:componentRef="status_register" spirit:portRef="aresetn"/>
+        <spirit:internalPortReference spirit:componentRef="axis_clock_converter_0" spirit:portRef="s_axis_aresetn"/>
+        <spirit:internalPortReference spirit:componentRef="axis_clock_converter_0" spirit:portRef="m_axis_aresetn"/>
+        <spirit:internalPortReference spirit:componentRef="axis_decimator_0" spirit:portRef="aresetn"/>
+        <spirit:internalPortReference spirit:componentRef="command_register" spirit:portRef="aresetn"/>
+        <spirit:internalPortReference spirit:componentRef="decimator_register" spirit:portRef="aresetn"/>
+        <spirit:internalPortReference spirit:componentRef="mode_register" spirit:portRef="aresetn"/>
+        <spirit:internalPortReference spirit:componentRef="dma_size_register" spirit:portRef="aresetn"/>
+        <spirit:internalPortReference spirit:componentRef="pts_register" spirit:portRef="aresetn"/>
+        <spirit:internalPortReference spirit:componentRef="axis_packetizer_0" spirit:portRef="aresetn"/>
+        <spirit:internalPortReference spirit:componentRef="autozero_smp_register" spirit:portRef="aresetn"/>
+        <spirit:internalPortReference spirit:componentRef="autozero_mul_register" spirit:portRef="aresetn"/>
+        <spirit:internalPortReference spirit:componentRef="autozero_register" spirit:portRef="aresetn"/>
+        <spirit:internalPortReference spirit:componentRef="axis_decimator_2" spirit:portRef="aresetn"/>
         <spirit:internalPortReference spirit:componentRef="red_pitaya_ps_axi_periph" spirit:portRef="M00_ARESETN"/>
         <spirit:internalPortReference spirit:componentRef="red_pitaya_ps_axi_periph" spirit:portRef="M01_ARESETN"/>
         <spirit:internalPortReference spirit:componentRef="red_pitaya_ps_axi_periph" spirit:portRef="M02_ARESETN"/>
@@ -1058,15 +1160,6 @@
         <spirit:internalPortReference spirit:componentRef="red_pitaya_ps_axi_periph" spirit:portRef="M17_ARESETN"/>
         <spirit:internalPortReference spirit:componentRef="red_pitaya_ps_axi_periph" spirit:portRef="M18_ARESETN"/>
         <spirit:internalPortReference spirit:componentRef="red_pitaya_ps_axi_periph" spirit:portRef="S00_ARESETN"/>
-        <spirit:internalPortReference spirit:componentRef="status_register" spirit:portRef="aresetn"/>
-        <spirit:internalPortReference spirit:componentRef="axis_clock_converter_0" spirit:portRef="s_axis_aresetn"/>
-        <spirit:internalPortReference spirit:componentRef="axis_clock_converter_0" spirit:portRef="m_axis_aresetn"/>
-        <spirit:internalPortReference spirit:componentRef="axis_decimator_0" spirit:portRef="aresetn"/>
-        <spirit:internalPortReference spirit:componentRef="command_register" spirit:portRef="aresetn"/>
-        <spirit:internalPortReference spirit:componentRef="decimator_register" spirit:portRef="aresetn"/>
-        <spirit:internalPortReference spirit:componentRef="mode_register" spirit:portRef="aresetn"/>
-        <spirit:internalPortReference spirit:componentRef="dma_size_register" spirit:portRef="aresetn"/>
-        <spirit:internalPortReference spirit:componentRef="pts_register" spirit:portRef="aresetn"/>
       </spirit:adHocConnection>
       <spirit:adHocConnection>
         <spirit:name>trarec_0_out_synch_trig</spirit:name>
@@ -1101,6 +1194,7 @@
       <spirit:adHocConnection>
         <spirit:name>command_register_cfg_data</spirit:name>
         <spirit:internalPortReference spirit:componentRef="command_register" spirit:portRef="cfg_data"/>
+        <spirit:internalPortReference spirit:componentRef="integrator_0" spirit:portRef="command_reg"/>
         <spirit:internalPortReference spirit:componentRef="recorder_0" spirit:portRef="cmd_reg"/>
       </spirit:adHocConnection>
       <spirit:adHocConnection>
@@ -1121,7 +1215,7 @@
       <spirit:adHocConnection>
         <spirit:name>stream_decimator_register_cfg_data</spirit:name>
         <spirit:internalPortReference spirit:componentRef="stream_decimator_register" spirit:portRef="cfg_data"/>
-        <spirit:internalPortReference spirit:componentRef="axis_decimator_1" spirit:portRef="cfg_data"/>
+        <spirit:internalPortReference spirit:componentRef="integrator_0" spirit:portRef="freq_div_reg"/>
       </spirit:adHocConnection>
       <spirit:adHocConnection>
         <spirit:name>axi_dma_0_s2mm_introut</spirit:name>
@@ -1129,14 +1223,39 @@
         <spirit:internalPortReference spirit:componentRef="xlconcat_0" spirit:portRef="In0"/>
       </spirit:adHocConnection>
       <spirit:adHocConnection>
+        <spirit:name>xlconstant_0_dout</spirit:name>
+        <spirit:internalPortReference spirit:componentRef="xlconstant_0" spirit:portRef="dout"/>
+        <spirit:internalPortReference spirit:componentRef="axis_packetizer_0" spirit:portRef="cfg_data"/>
+      </spirit:adHocConnection>
+      <spirit:adHocConnection>
+        <spirit:name>stream_fifo_interrupt</spirit:name>
+        <spirit:internalPortReference spirit:componentRef="stream_fifo" spirit:portRef="interrupt"/>
+        <spirit:internalPortReference spirit:componentRef="xlconcat_0" spirit:portRef="In1"/>
+      </spirit:adHocConnection>
+      <spirit:adHocConnection>
         <spirit:name>xlconcat_0_dout</spirit:name>
         <spirit:internalPortReference spirit:componentRef="xlconcat_0" spirit:portRef="dout"/>
         <spirit:internalPortReference spirit:componentRef="red_pitaya_ps" spirit:portRef="IRQ_F2P"/>
       </spirit:adHocConnection>
       <spirit:adHocConnection>
-        <spirit:name>axi_fifo_mm_s_0_interrupt</spirit:name>
-        <spirit:internalPortReference spirit:componentRef="axi_fifo_mm_s_0" spirit:portRef="interrupt"/>
-        <spirit:internalPortReference spirit:componentRef="xlconcat_0" spirit:portRef="In1"/>
+        <spirit:name>autozero_smp_register_cfg_data</spirit:name>
+        <spirit:internalPortReference spirit:componentRef="autozero_smp_register" spirit:portRef="cfg_data"/>
+        <spirit:internalPortReference spirit:componentRef="integrator_0" spirit:portRef="autozero_samples_reg"/>
+      </spirit:adHocConnection>
+      <spirit:adHocConnection>
+        <spirit:name>autozero_mul_register_cfg_data</spirit:name>
+        <spirit:internalPortReference spirit:componentRef="autozero_mul_register" spirit:portRef="cfg_data"/>
+        <spirit:internalPortReference spirit:componentRef="integrator_0" spirit:portRef="autozero_mul_reg"/>
+      </spirit:adHocConnection>
+      <spirit:adHocConnection>
+        <spirit:name>integrator_0_autozero_reg</spirit:name>
+        <spirit:internalPortReference spirit:componentRef="integrator_0" spirit:portRef="autozero_reg"/>
+        <spirit:internalPortReference spirit:componentRef="autozero_register" spirit:portRef="sts_data"/>
+      </spirit:adHocConnection>
+      <spirit:adHocConnection>
+        <spirit:name>xlconstant_1_dout</spirit:name>
+        <spirit:internalPortReference spirit:componentRef="xlconstant_1" spirit:portRef="dout"/>
+        <spirit:internalPortReference spirit:componentRef="axis_decimator_2" spirit:portRef="cfg_data"/>
       </spirit:adHocConnection>
     </spirit:adHocConnections>
     <spirit:hierConnections>
@@ -3909,11 +4028,36 @@
     <spirit:library>BlockDiagram/red_pitaya_ps_1_imp/red_pitaya_ps_axi_periph_imp</spirit:library>
     <spirit:name>m14_couplers_imp</spirit:name>
     <spirit:version>1.00.a</spirit:version>
+    <spirit:componentInstances>
+      <spirit:componentInstance>
+        <spirit:instanceName>auto_pc</spirit:instanceName>
+        <spirit:componentRef spirit:library="ip" spirit:name="axi_protocol_converter" spirit:vendor="xilinx.com" spirit:version="2.1"/>
+        <spirit:configurableElementValues>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_auto_pc_6</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="SI_PROTOCOL">AXI4</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="MI_PROTOCOL">AXI4LITE</spirit:configurableElementValue>
+        </spirit:configurableElementValues>
+      </spirit:componentInstance>
+    </spirit:componentInstances>
     <spirit:interconnections/>
-    <spirit:adHocConnections/>
+    <spirit:adHocConnections>
+      <spirit:adHocConnection>
+        <spirit:name>S_ACLK_1</spirit:name>
+        <spirit:externalPortReference spirit:portRef="S_ACLK"/>
+        <spirit:internalPortReference spirit:componentRef="auto_pc" spirit:portRef="aclk"/>
+      </spirit:adHocConnection>
+      <spirit:adHocConnection>
+        <spirit:name>S_ARESETN_1</spirit:name>
+        <spirit:externalPortReference spirit:portRef="S_ARESETN"/>
+        <spirit:internalPortReference spirit:componentRef="auto_pc" spirit:portRef="aresetn"/>
+      </spirit:adHocConnection>
+    </spirit:adHocConnections>
     <spirit:hierConnections>
-      <spirit:hierConnection spirit:interfaceRef="M_AXI/m14_couplers_to_m14_couplers">
-        <spirit:activeInterface spirit:busRef="S_AXI" spirit:componentRef="./m14_couplers_to_m14_couplers"/>
+      <spirit:hierConnection spirit:interfaceRef="M_AXI/auto_pc_to_m14_couplers">
+        <spirit:activeInterface spirit:busRef="M_AXI" spirit:componentRef="auto_pc"/>
+      </spirit:hierConnection>
+      <spirit:hierConnection spirit:interfaceRef="S_AXI/m14_couplers_to_auto_pc">
+        <spirit:activeInterface spirit:busRef="S_AXI" spirit:componentRef="auto_pc"/>
       </spirit:hierConnection>
     </spirit:hierConnections>
   </spirit:design>
@@ -4071,11 +4215,36 @@
     <spirit:library>BlockDiagram/red_pitaya_ps_1_imp/red_pitaya_ps_axi_periph_imp</spirit:library>
     <spirit:name>m13_couplers_imp</spirit:name>
     <spirit:version>1.00.a</spirit:version>
+    <spirit:componentInstances>
+      <spirit:componentInstance>
+        <spirit:instanceName>auto_pc</spirit:instanceName>
+        <spirit:componentRef spirit:library="ip" spirit:name="axi_protocol_converter" spirit:vendor="xilinx.com" spirit:version="2.1"/>
+        <spirit:configurableElementValues>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_auto_pc_5</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="SI_PROTOCOL">AXI4</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="MI_PROTOCOL">AXI4LITE</spirit:configurableElementValue>
+        </spirit:configurableElementValues>
+      </spirit:componentInstance>
+    </spirit:componentInstances>
     <spirit:interconnections/>
-    <spirit:adHocConnections/>
+    <spirit:adHocConnections>
+      <spirit:adHocConnection>
+        <spirit:name>S_ACLK_1</spirit:name>
+        <spirit:externalPortReference spirit:portRef="S_ACLK"/>
+        <spirit:internalPortReference spirit:componentRef="auto_pc" spirit:portRef="aclk"/>
+      </spirit:adHocConnection>
+      <spirit:adHocConnection>
+        <spirit:name>S_ARESETN_1</spirit:name>
+        <spirit:externalPortReference spirit:portRef="S_ARESETN"/>
+        <spirit:internalPortReference spirit:componentRef="auto_pc" spirit:portRef="aresetn"/>
+      </spirit:adHocConnection>
+    </spirit:adHocConnections>
     <spirit:hierConnections>
-      <spirit:hierConnection spirit:interfaceRef="M_AXI/m13_couplers_to_m13_couplers">
-        <spirit:activeInterface spirit:busRef="S_AXI" spirit:componentRef="./m13_couplers_to_m13_couplers"/>
+      <spirit:hierConnection spirit:interfaceRef="M_AXI/auto_pc_to_m13_couplers">
+        <spirit:activeInterface spirit:busRef="M_AXI" spirit:componentRef="auto_pc"/>
+      </spirit:hierConnection>
+      <spirit:hierConnection spirit:interfaceRef="S_AXI/m13_couplers_to_auto_pc">
+        <spirit:activeInterface spirit:busRef="S_AXI" spirit:componentRef="auto_pc"/>
       </spirit:hierConnection>
     </spirit:hierConnections>
   </spirit:design>
@@ -4233,11 +4402,36 @@
     <spirit:library>BlockDiagram/red_pitaya_ps_1_imp/red_pitaya_ps_axi_periph_imp</spirit:library>
     <spirit:name>m12_couplers_imp</spirit:name>
     <spirit:version>1.00.a</spirit:version>
+    <spirit:componentInstances>
+      <spirit:componentInstance>
+        <spirit:instanceName>auto_pc</spirit:instanceName>
+        <spirit:componentRef spirit:library="ip" spirit:name="axi_protocol_converter" spirit:vendor="xilinx.com" spirit:version="2.1"/>
+        <spirit:configurableElementValues>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_auto_pc_4</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="SI_PROTOCOL">AXI4</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="MI_PROTOCOL">AXI4LITE</spirit:configurableElementValue>
+        </spirit:configurableElementValues>
+      </spirit:componentInstance>
+    </spirit:componentInstances>
     <spirit:interconnections/>
-    <spirit:adHocConnections/>
+    <spirit:adHocConnections>
+      <spirit:adHocConnection>
+        <spirit:name>S_ACLK_1</spirit:name>
+        <spirit:externalPortReference spirit:portRef="S_ACLK"/>
+        <spirit:internalPortReference spirit:componentRef="auto_pc" spirit:portRef="aclk"/>
+      </spirit:adHocConnection>
+      <spirit:adHocConnection>
+        <spirit:name>S_ARESETN_1</spirit:name>
+        <spirit:externalPortReference spirit:portRef="S_ARESETN"/>
+        <spirit:internalPortReference spirit:componentRef="auto_pc" spirit:portRef="aresetn"/>
+      </spirit:adHocConnection>
+    </spirit:adHocConnections>
     <spirit:hierConnections>
-      <spirit:hierConnection spirit:interfaceRef="M_AXI/m12_couplers_to_m12_couplers">
-        <spirit:activeInterface spirit:busRef="S_AXI" spirit:componentRef="./m12_couplers_to_m12_couplers"/>
+      <spirit:hierConnection spirit:interfaceRef="M_AXI/auto_pc_to_m12_couplers">
+        <spirit:activeInterface spirit:busRef="M_AXI" spirit:componentRef="auto_pc"/>
+      </spirit:hierConnection>
+      <spirit:hierConnection spirit:interfaceRef="S_AXI/m12_couplers_to_auto_pc">
+        <spirit:activeInterface spirit:busRef="S_AXI" spirit:componentRef="auto_pc"/>
       </spirit:hierConnection>
     </spirit:hierConnections>
   </spirit:design>
@@ -6419,7 +6613,7 @@
         <spirit:instanceName>auto_pc</spirit:instanceName>
         <spirit:componentRef spirit:library="ip" spirit:name="axi_protocol_converter" spirit:vendor="xilinx.com" spirit:version="2.1"/>
         <spirit:configurableElementValues>
-          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_auto_pc_4</spirit:configurableElementValue>
+          <spirit:configurableElementValue spirit:referenceId="bd:xciName">red_pitaya_ps_1_auto_pc_7</spirit:configurableElementValue>
           <spirit:configurableElementValue spirit:referenceId="SI_PROTOCOL">AXI3</spirit:configurableElementValue>
           <spirit:configurableElementValue spirit:referenceId="MI_PROTOCOL">AXI4</spirit:configurableElementValue>
         </spirit:configurableElementValues>
@@ -7008,6 +7202,18 @@
             <spirit:range>128M</spirit:range>
           </spirit:segment>
           <spirit:segment>
+            <spirit:name>SEG_axi_cfg_register_0_reg03</spirit:name>
+            <spirit:displayName>/autozero_smp_register/s_axi/reg0</spirit:displayName>
+            <spirit:addressOffset>0x54000000</spirit:addressOffset>
+            <spirit:range>64M</spirit:range>
+          </spirit:segment>
+          <spirit:segment>
+            <spirit:name>SEG_axi_cfg_register_0_reg04</spirit:name>
+            <spirit:displayName>/autozero_mul_register/s_axi/reg0</spirit:displayName>
+            <spirit:addressOffset>0x5C000000</spirit:addressOffset>
+            <spirit:range>64M</spirit:range>
+          </spirit:segment>
+          <spirit:segment>
             <spirit:name>SEG_axi_dma_0_Reg</spirit:name>
             <spirit:displayName>/axi_dma_0/S_AXI_LITE/Reg</spirit:displayName>
             <spirit:addressOffset>0x40400000</spirit:addressOffset>
@@ -7015,13 +7221,13 @@
           </spirit:segment>
           <spirit:segment>
             <spirit:name>SEG_axi_fifo_mm_s_0_Mem0</spirit:name>
-            <spirit:displayName>/axi_fifo_mm_s_0/S_AXI/Mem0</spirit:displayName>
+            <spirit:displayName>/stream_fifo/S_AXI/Mem0</spirit:displayName>
             <spirit:addressOffset>0x43C00000</spirit:addressOffset>
             <spirit:range>64K</spirit:range>
           </spirit:segment>
           <spirit:segment>
             <spirit:name>SEG_axi_fifo_mm_s_0_Mem1</spirit:name>
-            <spirit:displayName>/axi_fifo_mm_s_0/S_AXI_FULL/Mem1</spirit:displayName>
+            <spirit:displayName>/stream_fifo/S_AXI_FULL/Mem1</spirit:displayName>
             <spirit:addressOffset>0x43C10000</spirit:addressOffset>
             <spirit:range>64K</spirit:range>
           </spirit:segment>
@@ -7036,6 +7242,12 @@
             <spirit:displayName>/counter_register/s_axi/reg0</spirit:displayName>
             <spirit:addressOffset>0x48000000</spirit:addressOffset>
             <spirit:range>128M</spirit:range>
+          </spirit:segment>
+          <spirit:segment>
+            <spirit:name>SEG_axi_sts_register_0_reg02</spirit:name>
+            <spirit:displayName>/autozero_register/s_axi/reg0</spirit:displayName>
+            <spirit:addressOffset>0x64000000</spirit:addressOffset>
+            <spirit:range>64M</spirit:range>
           </spirit:segment>
           <spirit:segment>
             <spirit:name>SEG_command_register_reg0</spirit:name>

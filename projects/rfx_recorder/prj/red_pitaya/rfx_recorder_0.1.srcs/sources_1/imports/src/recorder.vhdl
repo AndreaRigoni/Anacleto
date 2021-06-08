@@ -106,6 +106,7 @@ begin
     use_ext_trigger <= mode_reg(0);
     
     s_axis_stream_tready <= '1';
+    s_axis_tready <= '1';
 
     m_axis_tvalid <= out_tvalid;
     m_axis_tdata <= out_tdata; 
@@ -142,7 +143,7 @@ begin
                                 state := STATE_TRIGGERED;
                             end if;
                         end if;
-                       
+
                      when  STATE_TRIGGERED =>
                         out_tvalid <= s_axis_tvalid;
                         out_tdata <= s_axis_tdata;
@@ -162,6 +163,7 @@ begin
                         end if;
 
                      when  STATE_FLUSHING_CHUNK =>
+                        status_reg <= (others => '1');
                         if pts_count = 0  then
                             state := STATE_IDLE;
                         end if;

@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# highway, recorder, resampler, splitter
+# highway, integrator, recorder, resampler, splitter
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -51,7 +51,6 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 set list_projs [get_projects -quiet]
 if { $list_projs eq "" } {
    create_project project_1 myproj -part xc7z010clg400-1
-   set_property BOARD_PART redpitaya.com:redpitaya:part0:1.1 [current_project]
 }
 
 
@@ -132,18 +131,19 @@ set bCheckIPs 1
 if { $bCheckIPs == 1 } {
    set list_check_ips "\ 
 xilinx.com:ip:xlconstant:1.1\
+pavel-demin:user:axi_cfg_register:1.0\
+pavel-demin:user:axi_sts_register:1.0\
 xilinx.com:ip:axi_dma:7.1\
-xilinx.com:ip:axi_fifo_mm_s:4.1\
 xilinx.com:ip:smartconnect:1.0\
 xilinx.com:ip:axis_clock_converter:1.1\
 xilinx.com:ip:axis_data_fifo:1.1\
 pavel-demin:user:axis_decimator:1.0\
+pavel-demin:user:axis_packetizer:1.0\
 pavel-demin:user:axis_red_pitaya_adc:2.0\
 xilinx.com:ip:util_ds_buf:2.1\
-pavel-demin:user:axi_cfg_register:1.0\
-pavel-demin:user:axi_sts_register:1.0\
 xilinx.com:ip:processing_system7:5.5\
 xilinx.com:ip:proc_sys_reset:5.0\
+xilinx.com:ip:axi_fifo_mm_s:4.1\
 xilinx.com:ip:xlconcat:2.1\
 "
 
@@ -171,6 +171,7 @@ set bCheckModules 1
 if { $bCheckModules == 1 } {
    set list_check_mods "\ 
 highway\
+integrator\
 recorder\
 resampler\
 splitter\
@@ -255,6 +256,45 @@ proc create_root_design { parentCell } {
   # Create instance: adc_clk_stabilizer, and set properties
   set adc_clk_stabilizer [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 adc_clk_stabilizer ]
 
+  # Create instance: autozero_mul_register, and set properties
+  set autozero_mul_register [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 autozero_mul_register ]
+  set_property -dict [ list \
+   CONFIG.CFG_DATA_WIDTH {32} \
+ ] $autozero_mul_register
+
+  set_property -dict [ list \
+   CONFIG.SUPPORTS_NARROW_BURST {0} \
+   CONFIG.NUM_READ_OUTSTANDING {1} \
+   CONFIG.NUM_WRITE_OUTSTANDING {1} \
+   CONFIG.MAX_BURST_LENGTH {1} \
+ ] [get_bd_intf_pins /autozero_mul_register/S_AXI]
+
+  # Create instance: autozero_register, and set properties
+  set autozero_register [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_sts_register:1.0 autozero_register ]
+  set_property -dict [ list \
+   CONFIG.STS_DATA_WIDTH {32} \
+ ] $autozero_register
+
+  set_property -dict [ list \
+   CONFIG.SUPPORTS_NARROW_BURST {0} \
+   CONFIG.NUM_READ_OUTSTANDING {1} \
+   CONFIG.NUM_WRITE_OUTSTANDING {1} \
+   CONFIG.MAX_BURST_LENGTH {1} \
+ ] [get_bd_intf_pins /autozero_register/S_AXI]
+
+  # Create instance: autozero_smp_register, and set properties
+  set autozero_smp_register [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 autozero_smp_register ]
+  set_property -dict [ list \
+   CONFIG.CFG_DATA_WIDTH {32} \
+ ] $autozero_smp_register
+
+  set_property -dict [ list \
+   CONFIG.SUPPORTS_NARROW_BURST {0} \
+   CONFIG.NUM_READ_OUTSTANDING {1} \
+   CONFIG.NUM_WRITE_OUTSTANDING {1} \
+   CONFIG.MAX_BURST_LENGTH {1} \
+ ] [get_bd_intf_pins /autozero_smp_register/S_AXI]
+
   # Create instance: axi_dma_0, and set properties
   set axi_dma_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_dma:7.1 axi_dma_0 ]
   set_property -dict [ list \
@@ -265,18 +305,6 @@ proc create_root_design { parentCell } {
    CONFIG.c_sg_include_stscntrl_strm {0} \
    CONFIG.c_sg_length_width {23} \
  ] $axi_dma_0
-
-  # Create instance: axi_fifo_mm_s_0, and set properties
-  set axi_fifo_mm_s_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_fifo_mm_s:4.1 axi_fifo_mm_s_0 ]
-  set_property -dict [ list \
-   CONFIG.C_DATA_INTERFACE_TYPE {1} \
-   CONFIG.C_TX_FIFO_DEPTH {512} \
-   CONFIG.C_TX_FIFO_PE_THRESHOLD {2} \
-   CONFIG.C_TX_FIFO_PF_THRESHOLD {507} \
-   CONFIG.C_USE_RX_DATA {1} \
-   CONFIG.C_USE_TX_CTRL {0} \
-   CONFIG.C_USE_TX_DATA {0} \
- ] $axi_fifo_mm_s_0
 
   # Create instance: axi_smc, and set properties
   set axi_smc [ create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:1.0 axi_smc ]
@@ -308,16 +336,30 @@ proc create_root_design { parentCell } {
    CONFIG.TDATA_NUM_BYTES {4} \
  ] [get_bd_intf_pins /axis_decimator_0/S_AXIS]
 
-  # Create instance: axis_decimator_1, and set properties
-  set axis_decimator_1 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_decimator:1.0 axis_decimator_1 ]
+  # Create instance: axis_decimator_2, and set properties
+  set axis_decimator_2 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_decimator:1.0 axis_decimator_2 ]
 
   set_property -dict [ list \
    CONFIG.TDATA_NUM_BYTES {4} \
- ] [get_bd_intf_pins /axis_decimator_1/M_AXIS]
+ ] [get_bd_intf_pins /axis_decimator_2/M_AXIS]
 
   set_property -dict [ list \
    CONFIG.TDATA_NUM_BYTES {4} \
- ] [get_bd_intf_pins /axis_decimator_1/S_AXIS]
+ ] [get_bd_intf_pins /axis_decimator_2/S_AXIS]
+
+  # Create instance: axis_packetizer_0, and set properties
+  set axis_packetizer_0 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_packetizer:1.0 axis_packetizer_0 ]
+  set_property -dict [ list \
+   CONFIG.CONTINUOUS {TRUE} \
+ ] $axis_packetizer_0
+
+  set_property -dict [ list \
+   CONFIG.TDATA_NUM_BYTES {4} \
+ ] [get_bd_intf_pins /axis_packetizer_0/M_AXIS]
+
+  set_property -dict [ list \
+   CONFIG.TDATA_NUM_BYTES {4} \
+ ] [get_bd_intf_pins /axis_packetizer_0/S_AXIS]
 
   # Create instance: axis_red_pitaya_adc_0, and set properties
   set axis_red_pitaya_adc_0 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_red_pitaya_adc:2.0 axis_red_pitaya_adc_0 ]
@@ -405,6 +447,25 @@ proc create_root_design { parentCell } {
      return 1
    }
   
+  # Create instance: integrator_0, and set properties
+  set block_name integrator
+  set block_cell_name integrator_0
+  if { [catch {set integrator_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_msg_id "BD_TCL-105" "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $integrator_0 eq "" } {
+     catch {common::send_msg_id "BD_TCL-106" "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+  
+  set_property -dict [ list \
+   CONFIG.TDATA_NUM_BYTES {4} \
+ ] [get_bd_intf_pins /integrator_0/m_axis]
+
+  set_property -dict [ list \
+   CONFIG.TDATA_NUM_BYTES {24} \
+ ] [get_bd_intf_pins /integrator_0/s_axis]
+
   # Create instance: mode_register, and set properties
   set mode_register [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 mode_register ]
   set_property -dict [ list \
@@ -448,15 +509,7 @@ proc create_root_design { parentCell } {
 
   set_property -dict [ list \
    CONFIG.TDATA_NUM_BYTES {4} \
- ] [get_bd_intf_pins /recorder_0/m_axis_stream]
-
-  set_property -dict [ list \
-   CONFIG.TDATA_NUM_BYTES {4} \
  ] [get_bd_intf_pins /recorder_0/s_axis]
-
-  set_property -dict [ list \
-   CONFIG.TDATA_NUM_BYTES {4} \
- ] [get_bd_intf_pins /recorder_0/s_axis_stream]
 
   # Create instance: red_pitaya_ps, and set properties
   set red_pitaya_ps [ create_bd_cell -type ip -vlnv xilinx.com:ip:processing_system7:5.5 red_pitaya_ps ]
@@ -540,7 +593,6 @@ proc create_root_design { parentCell } {
    CONFIG.PCW_FPGA_FCLK2_ENABLE {0} \
    CONFIG.PCW_FPGA_FCLK3_ENABLE {0} \
    CONFIG.PCW_GPIO_EMIO_GPIO_ENABLE {0} \
-   CONFIG.PCW_GPIO_EMIO_GPIO_WIDTH {64} \
    CONFIG.PCW_GPIO_MIO_GPIO_ENABLE {1} \
    CONFIG.PCW_GPIO_MIO_GPIO_IO {MIO} \
    CONFIG.PCW_I2C0_GRP_INT_ENABLE {0} \
@@ -821,7 +873,6 @@ proc create_root_design { parentCell } {
    CONFIG.PCW_UART0_UART0_IO {MIO 14 .. 15} \
    CONFIG.PCW_UART1_GRP_FULL_ENABLE {0} \
    CONFIG.PCW_UART1_PERIPHERAL_ENABLE {0} \
-   CONFIG.PCW_UART1_UART1_IO {<Select>} \
    CONFIG.PCW_UART_PERIPHERAL_DIVISOR0 {10} \
    CONFIG.PCW_UART_PERIPHERAL_FREQMHZ {100} \
    CONFIG.PCW_UART_PERIPHERAL_VALID {1} \
@@ -908,6 +959,30 @@ proc create_root_design { parentCell } {
 
   set_property -dict [ list \
    CONFIG.TDATA_NUM_BYTES {4} \
+ ] [get_bd_intf_pins /splitter_0/m_axis_3]
+
+  set_property -dict [ list \
+   CONFIG.TDATA_NUM_BYTES {4} \
+ ] [get_bd_intf_pins /splitter_0/m_axis_4]
+
+  set_property -dict [ list \
+   CONFIG.TDATA_NUM_BYTES {4} \
+ ] [get_bd_intf_pins /splitter_0/m_axis_5]
+
+  set_property -dict [ list \
+   CONFIG.TDATA_NUM_BYTES {4} \
+ ] [get_bd_intf_pins /splitter_0/m_axis_6]
+
+  set_property -dict [ list \
+   CONFIG.TDATA_NUM_BYTES {4} \
+ ] [get_bd_intf_pins /splitter_0/m_axis_7]
+
+  set_property -dict [ list \
+   CONFIG.TDATA_NUM_BYTES {4} \
+ ] [get_bd_intf_pins /splitter_0/m_axis_8]
+
+  set_property -dict [ list \
+   CONFIG.TDATA_NUM_BYTES {4} \
  ] [get_bd_intf_pins /splitter_0/s_axis]
 
   # Create instance: status_register, and set properties
@@ -936,8 +1011,36 @@ proc create_root_design { parentCell } {
    CONFIG.MAX_BURST_LENGTH {1} \
  ] [get_bd_intf_pins /stream_decimator_register/S_AXI]
 
+  # Create instance: stream_fifo, and set properties
+  set stream_fifo [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_fifo_mm_s:4.1 stream_fifo ]
+  set_property -dict [ list \
+   CONFIG.C_DATA_INTERFACE_TYPE {1} \
+   CONFIG.C_RX_FIFO_DEPTH {8192} \
+   CONFIG.C_RX_FIFO_PE_THRESHOLD {2} \
+   CONFIG.C_RX_FIFO_PF_THRESHOLD {507} \
+   CONFIG.C_TX_FIFO_DEPTH {512} \
+   CONFIG.C_TX_FIFO_PE_THRESHOLD {2} \
+   CONFIG.C_TX_FIFO_PF_THRESHOLD {507} \
+   CONFIG.C_USE_RX_DATA {1} \
+   CONFIG.C_USE_TX_CTRL {0} \
+   CONFIG.C_USE_TX_DATA {0} \
+ ] $stream_fifo
+
   # Create instance: xlconcat_0, and set properties
   set xlconcat_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_0 ]
+
+  # Create instance: xlconstant_0, and set properties
+  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
+  set_property -dict [ list \
+   CONFIG.CONST_WIDTH {32} \
+ ] $xlconstant_0
+
+  # Create instance: xlconstant_1, and set properties
+  set xlconstant_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_1 ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {125} \
+   CONFIG.CONST_WIDTH {32} \
+ ] $xlconstant_1
 
   # Create interface connections
   connect_bd_intf_net -intf_net CLK_IN_D_0_1 [get_bd_intf_ports adc_clk_i] [get_bd_intf_pins clock_in/CLK_IN_D]
@@ -947,10 +1050,11 @@ proc create_root_design { parentCell } {
   connect_bd_intf_net -intf_net axis_clock_converter_0_M_AXIS [get_bd_intf_pins axis_clock_converter_0/M_AXIS] [get_bd_intf_pins resampler_0/s_axis]
   connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_pins axi_dma_0/S_AXIS_S2MM] [get_bd_intf_pins axis_data_fifo_0/M_AXIS]
   connect_bd_intf_net -intf_net axis_decimator_0_M_AXIS [get_bd_intf_pins axis_decimator_0/M_AXIS] [get_bd_intf_pins recorder_0/s_axis]
-  connect_bd_intf_net -intf_net axis_decimator_1_M_AXIS [get_bd_intf_pins axis_decimator_1/M_AXIS] [get_bd_intf_pins recorder_0/s_axis_stream]
+  connect_bd_intf_net -intf_net axis_decimator_2_M_AXIS [get_bd_intf_pins axis_decimator_2/M_AXIS] [get_bd_intf_pins splitter_0/s_axis]
+  connect_bd_intf_net -intf_net axis_packetizer_0_M_AXIS [get_bd_intf_pins axis_packetizer_0/M_AXIS] [get_bd_intf_pins stream_fifo/AXI_STR_RXD]
   connect_bd_intf_net -intf_net axis_red_pitaya_adc_0_M_AXIS [get_bd_intf_pins axis_clock_converter_0/S_AXIS] [get_bd_intf_pins axis_red_pitaya_adc_0/M_AXIS]
+  connect_bd_intf_net -intf_net integrator_0_m_axis [get_bd_intf_pins axis_packetizer_0/S_AXIS] [get_bd_intf_pins integrator_0/m_axis]
   connect_bd_intf_net -intf_net recorder_0_m_axis [get_bd_intf_pins axis_data_fifo_0/S_AXIS] [get_bd_intf_pins recorder_0/m_axis]
-  connect_bd_intf_net -intf_net recorder_0_m_axis_stream [get_bd_intf_pins axi_fifo_mm_s_0/AXI_STR_RXD] [get_bd_intf_pins recorder_0/m_axis_stream]
   connect_bd_intf_net -intf_net red_pitaya_ps_DDR [get_bd_intf_ports DDR] [get_bd_intf_pins red_pitaya_ps/DDR]
   connect_bd_intf_net -intf_net red_pitaya_ps_FIXED_IO [get_bd_intf_ports FIXED_IO] [get_bd_intf_pins red_pitaya_ps/FIXED_IO]
   connect_bd_intf_net -intf_net red_pitaya_ps_M_AXI_GP0 [get_bd_intf_pins red_pitaya_ps/M_AXI_GP0] [get_bd_intf_pins red_pitaya_ps_axi_periph/S00_AXI]
@@ -961,41 +1065,49 @@ proc create_root_design { parentCell } {
   connect_bd_intf_net -intf_net red_pitaya_ps_axi_periph_M04_AXI [get_bd_intf_pins mode_register/S_AXI] [get_bd_intf_pins red_pitaya_ps_axi_periph/M04_AXI]
   connect_bd_intf_net -intf_net red_pitaya_ps_axi_periph_M05_AXI [get_bd_intf_pins command_register/S_AXI] [get_bd_intf_pins red_pitaya_ps_axi_periph/M05_AXI]
   connect_bd_intf_net -intf_net red_pitaya_ps_axi_periph_M06_AXI [get_bd_intf_pins red_pitaya_ps_axi_periph/M06_AXI] [get_bd_intf_pins stream_decimator_register/S_AXI]
-  connect_bd_intf_net -intf_net red_pitaya_ps_axi_periph_M07_AXI [get_bd_intf_pins axi_fifo_mm_s_0/S_AXI] [get_bd_intf_pins red_pitaya_ps_axi_periph/M07_AXI]
+  connect_bd_intf_net -intf_net red_pitaya_ps_axi_periph_M07_AXI [get_bd_intf_pins red_pitaya_ps_axi_periph/M07_AXI] [get_bd_intf_pins stream_fifo/S_AXI]
   connect_bd_intf_net -intf_net red_pitaya_ps_axi_periph_M08_AXI [get_bd_intf_pins pts_register/S_AXI] [get_bd_intf_pins red_pitaya_ps_axi_periph/M08_AXI]
-  connect_bd_intf_net -intf_net red_pitaya_ps_axi_periph_M09_AXI [get_bd_intf_pins axi_fifo_mm_s_0/S_AXI_FULL] [get_bd_intf_pins red_pitaya_ps_axi_periph/M09_AXI]
+  connect_bd_intf_net -intf_net red_pitaya_ps_axi_periph_M09_AXI [get_bd_intf_pins red_pitaya_ps_axi_periph/M09_AXI] [get_bd_intf_pins stream_fifo/S_AXI_FULL]
   connect_bd_intf_net -intf_net red_pitaya_ps_axi_periph_M10_AXI [get_bd_intf_pins red_pitaya_ps_axi_periph/M10_AXI] [get_bd_intf_pins status_register/S_AXI]
   connect_bd_intf_net -intf_net red_pitaya_ps_axi_periph_M11_AXI [get_bd_intf_pins event_code_register/S_AXI] [get_bd_intf_pins red_pitaya_ps_axi_periph/M11_AXI]
-  connect_bd_intf_net -intf_net resampler_0_m_axis [get_bd_intf_pins resampler_0/m_axis] [get_bd_intf_pins splitter_0/s_axis]
+  connect_bd_intf_net -intf_net red_pitaya_ps_axi_periph_M12_AXI [get_bd_intf_pins autozero_smp_register/S_AXI] [get_bd_intf_pins red_pitaya_ps_axi_periph/M12_AXI]
+  connect_bd_intf_net -intf_net red_pitaya_ps_axi_periph_M13_AXI [get_bd_intf_pins autozero_mul_register/S_AXI] [get_bd_intf_pins red_pitaya_ps_axi_periph/M13_AXI]
+  connect_bd_intf_net -intf_net red_pitaya_ps_axi_periph_M14_AXI [get_bd_intf_pins autozero_register/S_AXI] [get_bd_intf_pins red_pitaya_ps_axi_periph/M14_AXI]
+  connect_bd_intf_net -intf_net resampler_0_m_axis [get_bd_intf_pins axis_decimator_2/S_AXIS] [get_bd_intf_pins resampler_0/m_axis]
   connect_bd_intf_net -intf_net splitter_0_m_axis_1 [get_bd_intf_pins axis_decimator_0/S_AXIS] [get_bd_intf_pins splitter_0/m_axis_1]
-  connect_bd_intf_net -intf_net splitter_0_m_axis_2 [get_bd_intf_pins axis_decimator_1/S_AXIS] [get_bd_intf_pins splitter_0/m_axis_2]
+  connect_bd_intf_net -intf_net splitter_0_m_axis_3 [get_bd_intf_pins integrator_0/s_axis] [get_bd_intf_pins splitter_0/m_axis_3]
 
   # Create port connections
   connect_bd_net -net adc_clk_stabilizer_dout [get_bd_ports adc_cdcs_o] [get_bd_pins adc_clk_stabilizer/dout]
   connect_bd_net -net adc_dat_a_0_1 [get_bd_ports adc_dat_a] [get_bd_pins axis_red_pitaya_adc_0/adc_dat_a]
   connect_bd_net -net adc_dat_b_0_1 [get_bd_ports adc_dat_b] [get_bd_pins axis_red_pitaya_adc_0/adc_dat_b]
-  connect_bd_net -net axi_cfg_register_0_cfg_data [get_bd_pins highway_0/mode_cfg] [get_bd_pins mode_register/cfg_data] [get_bd_pins recorder_0/mode_reg] [get_bd_pins resampler_0/mode_cfg]
+  connect_bd_net -net autozero_mul_register_cfg_data [get_bd_pins autozero_mul_register/cfg_data] [get_bd_pins integrator_0/autozero_mul_reg]
+  connect_bd_net -net autozero_smp_register_cfg_data [get_bd_pins autozero_smp_register/cfg_data] [get_bd_pins integrator_0/autozero_samples_reg]
+  connect_bd_net -net axi_cfg_register_0_cfg_data [get_bd_pins highway_0/mode_cfg] [get_bd_pins integrator_0/mode_reg] [get_bd_pins mode_register/cfg_data] [get_bd_pins recorder_0/mode_reg] [get_bd_pins resampler_0/mode_cfg]
   connect_bd_net -net axi_dma_0_s2mm_introut [get_bd_pins axi_dma_0/s2mm_introut] [get_bd_pins xlconcat_0/In0]
-  connect_bd_net -net axi_fifo_mm_s_0_interrupt [get_bd_pins axi_fifo_mm_s_0/interrupt] [get_bd_pins xlconcat_0/In1]
-  connect_bd_net -net command_register_cfg_data [get_bd_pins command_register/cfg_data] [get_bd_pins recorder_0/cmd_reg]
+  connect_bd_net -net command_register_cfg_data [get_bd_pins command_register/cfg_data] [get_bd_pins integrator_0/command_reg] [get_bd_pins recorder_0/cmd_reg]
   connect_bd_net -net decimator_cfg_data [get_bd_pins axis_decimator_0/cfg_data] [get_bd_pins decimator_register/cfg_data]
   connect_bd_net -net dma_size_register_cfg_data [get_bd_pins dma_size_register/cfg_data] [get_bd_pins recorder_0/chunk_size_reg]
   connect_bd_net -net ext_clk_1 [get_bd_ports ext_clk] [get_bd_pins highway_0/highway_clk]
   connect_bd_net -net highway_0_out_clk [get_bd_pins highway_0/out_clk] [get_bd_pins resampler_0/ext_clk]
   connect_bd_net -net highway_0_out_trig [get_bd_pins highway_0/out_trig] [get_bd_pins recorder_0/ext_trigger]
+  connect_bd_net -net integrator_0_autozero_reg [get_bd_pins autozero_register/sts_data] [get_bd_pins integrator_0/autozero_reg]
   connect_bd_net -net pts_register_cfg_data [get_bd_pins pts_register/cfg_data] [get_bd_pins recorder_0/pts_reg]
   connect_bd_net -net recorder_0_count_reg [get_bd_pins counter_register/sts_data] [get_bd_pins recorder_0/count_reg]
   connect_bd_net -net recorder_0_status_reg [get_bd_pins recorder_0/status_reg] [get_bd_pins status_register/sts_data]
-  connect_bd_net -net red_pitaya_ps_FCLK_CLK0 [get_bd_pins axi_dma_0/m_axi_s2mm_aclk] [get_bd_pins axi_dma_0/m_axi_sg_aclk] [get_bd_pins axi_dma_0/s_axi_lite_aclk] [get_bd_pins axi_fifo_mm_s_0/s_axi_aclk] [get_bd_pins axi_smc/aclk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_data_fifo_0/s_axis_aclk] [get_bd_pins axis_decimator_0/aclk] [get_bd_pins axis_decimator_1/aclk] [get_bd_pins command_register/aclk] [get_bd_pins counter_register/aclk] [get_bd_pins decimator_register/aclk] [get_bd_pins dma_size_register/aclk] [get_bd_pins event_code_register/aclk] [get_bd_pins highway_0/aclk] [get_bd_pins mode_register/aclk] [get_bd_pins pts_register/aclk] [get_bd_pins recorder_0/aclk] [get_bd_pins red_pitaya_ps/FCLK_CLK0] [get_bd_pins red_pitaya_ps/M_AXI_GP0_ACLK] [get_bd_pins red_pitaya_ps/S_AXI_HP0_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M00_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M01_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M02_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M03_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M04_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M05_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M06_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M07_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M08_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M09_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M10_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M11_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M12_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M13_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M14_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M15_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M16_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M17_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M18_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/S00_ACLK] [get_bd_pins resampler_0/aclk] [get_bd_pins rst_red_pitaya_ps_125M/slowest_sync_clk] [get_bd_pins splitter_0/aclk] [get_bd_pins status_register/aclk] [get_bd_pins stream_decimator_register/aclk]
+  connect_bd_net -net red_pitaya_ps_FCLK_CLK0 [get_bd_pins autozero_mul_register/aclk] [get_bd_pins autozero_register/aclk] [get_bd_pins autozero_smp_register/aclk] [get_bd_pins axi_dma_0/m_axi_s2mm_aclk] [get_bd_pins axi_dma_0/m_axi_sg_aclk] [get_bd_pins axi_dma_0/s_axi_lite_aclk] [get_bd_pins axi_smc/aclk] [get_bd_pins axis_clock_converter_0/m_axis_aclk] [get_bd_pins axis_data_fifo_0/s_axis_aclk] [get_bd_pins axis_decimator_0/aclk] [get_bd_pins axis_decimator_2/aclk] [get_bd_pins axis_packetizer_0/aclk] [get_bd_pins command_register/aclk] [get_bd_pins counter_register/aclk] [get_bd_pins decimator_register/aclk] [get_bd_pins dma_size_register/aclk] [get_bd_pins event_code_register/aclk] [get_bd_pins highway_0/aclk] [get_bd_pins integrator_0/aclk] [get_bd_pins mode_register/aclk] [get_bd_pins pts_register/aclk] [get_bd_pins recorder_0/aclk] [get_bd_pins red_pitaya_ps/FCLK_CLK0] [get_bd_pins red_pitaya_ps/M_AXI_GP0_ACLK] [get_bd_pins red_pitaya_ps/S_AXI_HP0_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M00_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M01_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M02_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M03_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M04_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M05_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M06_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M07_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M08_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M09_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M10_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M11_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M12_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M13_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M14_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M15_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M16_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M17_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/M18_ACLK] [get_bd_pins red_pitaya_ps_axi_periph/S00_ACLK] [get_bd_pins resampler_0/aclk] [get_bd_pins rst_red_pitaya_ps_125M/slowest_sync_clk] [get_bd_pins splitter_0/aclk] [get_bd_pins status_register/aclk] [get_bd_pins stream_decimator_register/aclk] [get_bd_pins stream_fifo/s_axi_aclk]
   connect_bd_net -net red_pitaya_ps_FCLK_RESET0_N [get_bd_pins red_pitaya_ps/FCLK_RESET0_N] [get_bd_pins rst_red_pitaya_ps_125M/ext_reset_in]
   connect_bd_net -net rst_red_pitaya_ps_125M_interconnect_aresetn [get_bd_pins axis_data_fifo_0/s_axis_aresetn] [get_bd_pins red_pitaya_ps_axi_periph/ARESETN] [get_bd_pins rst_red_pitaya_ps_125M/interconnect_aresetn]
-  connect_bd_net -net rst_red_pitaya_ps_125M_peripheral_aresetn [get_bd_pins axi_dma_0/axi_resetn] [get_bd_pins axi_fifo_mm_s_0/s_axi_aresetn] [get_bd_pins axi_smc/aresetn] [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins axis_decimator_0/aresetn] [get_bd_pins axis_decimator_1/aresetn] [get_bd_pins command_register/aresetn] [get_bd_pins counter_register/aresetn] [get_bd_pins decimator_register/aresetn] [get_bd_pins dma_size_register/aresetn] [get_bd_pins event_code_register/aresetn] [get_bd_pins mode_register/aresetn] [get_bd_pins pts_register/aresetn] [get_bd_pins red_pitaya_ps_axi_periph/M00_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M01_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M02_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M03_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M04_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M05_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M06_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M07_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M08_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M09_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M10_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M11_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M12_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M13_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M14_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M15_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M16_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M17_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M18_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/S00_ARESETN] [get_bd_pins rst_red_pitaya_ps_125M/peripheral_aresetn] [get_bd_pins status_register/aresetn] [get_bd_pins stream_decimator_register/aresetn]
-  connect_bd_net -net stream_decimator_register_cfg_data [get_bd_pins axis_decimator_1/cfg_data] [get_bd_pins stream_decimator_register/cfg_data]
+  connect_bd_net -net rst_red_pitaya_ps_125M_peripheral_aresetn [get_bd_pins autozero_mul_register/aresetn] [get_bd_pins autozero_register/aresetn] [get_bd_pins autozero_smp_register/aresetn] [get_bd_pins axi_dma_0/axi_resetn] [get_bd_pins axi_smc/aresetn] [get_bd_pins axis_clock_converter_0/m_axis_aresetn] [get_bd_pins axis_clock_converter_0/s_axis_aresetn] [get_bd_pins axis_decimator_0/aresetn] [get_bd_pins axis_decimator_2/aresetn] [get_bd_pins axis_packetizer_0/aresetn] [get_bd_pins command_register/aresetn] [get_bd_pins counter_register/aresetn] [get_bd_pins decimator_register/aresetn] [get_bd_pins dma_size_register/aresetn] [get_bd_pins event_code_register/aresetn] [get_bd_pins mode_register/aresetn] [get_bd_pins pts_register/aresetn] [get_bd_pins red_pitaya_ps_axi_periph/M00_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M01_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M02_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M03_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M04_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M05_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M06_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M07_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M08_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M09_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M10_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M11_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M12_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M13_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M14_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M15_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M16_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M17_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/M18_ARESETN] [get_bd_pins red_pitaya_ps_axi_periph/S00_ARESETN] [get_bd_pins rst_red_pitaya_ps_125M/peripheral_aresetn] [get_bd_pins status_register/aresetn] [get_bd_pins stream_decimator_register/aresetn] [get_bd_pins stream_fifo/s_axi_aresetn]
+  connect_bd_net -net stream_decimator_register_cfg_data [get_bd_pins integrator_0/freq_div_reg] [get_bd_pins stream_decimator_register/cfg_data]
+  connect_bd_net -net stream_fifo_interrupt [get_bd_pins stream_fifo/interrupt] [get_bd_pins xlconcat_0/In1]
   connect_bd_net -net trarec_0_out_synch_trig [get_bd_ports Led]
   connect_bd_net -net trig_event_code_cfg_data [get_bd_pins event_code_register/cfg_data] [get_bd_pins highway_0/in_event_code]
   connect_bd_net -net trigger_in_0_1 [get_bd_ports trigger_in_0] [get_bd_pins highway_0/in_trig]
   connect_bd_net -net util_ds_buf_0_IBUF_OUT [get_bd_pins axis_clock_converter_0/s_axis_aclk] [get_bd_pins axis_red_pitaya_adc_0/aclk] [get_bd_pins clock_in/IBUF_OUT]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins red_pitaya_ps/IRQ_F2P] [get_bd_pins xlconcat_0/dout]
+  connect_bd_net -net xlconstant_0_dout [get_bd_pins axis_packetizer_0/cfg_data] [get_bd_pins xlconstant_0/dout]
+  connect_bd_net -net xlconstant_1_dout [get_bd_pins axis_decimator_2/cfg_data] [get_bd_pins xlconstant_1/dout]
 
   # Create address segments
   create_bd_addr_seg -range 0x20000000 -offset 0x00000000 [get_bd_addr_spaces axi_dma_0/Data_SG] [get_bd_addr_segs red_pitaya_ps/S_AXI_HP0/HP0_DDR_LOWOCM] SEG_red_pitaya_ps_HP0_DDR_LOWOCM
@@ -1003,11 +1115,14 @@ proc create_root_design { parentCell } {
   create_bd_addr_seg -range 0x00010000 -offset 0x50000000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs dma_size_register/s_axi/reg0] SEG_axi_cfg_register_0_reg0
   create_bd_addr_seg -range 0x00010000 -offset 0x58000000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs event_code_register/s_axi/reg0] SEG_axi_cfg_register_0_reg01
   create_bd_addr_seg -range 0x08000000 -offset 0x68000000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs stream_decimator_register/s_axi/reg0] SEG_axi_cfg_register_0_reg02
+  create_bd_addr_seg -range 0x04000000 -offset 0x54000000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs autozero_smp_register/s_axi/reg0] SEG_axi_cfg_register_0_reg03
+  create_bd_addr_seg -range 0x04000000 -offset 0x5C000000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs autozero_mul_register/s_axi/reg0] SEG_axi_cfg_register_0_reg04
   create_bd_addr_seg -range 0x00010000 -offset 0x40400000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs axi_dma_0/S_AXI_LITE/Reg] SEG_axi_dma_0_Reg
-  create_bd_addr_seg -range 0x00010000 -offset 0x43C00000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs axi_fifo_mm_s_0/S_AXI/Mem0] SEG_axi_fifo_mm_s_0_Mem0
-  create_bd_addr_seg -range 0x00010000 -offset 0x43C10000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs axi_fifo_mm_s_0/S_AXI_FULL/Mem1] SEG_axi_fifo_mm_s_0_Mem1
+  create_bd_addr_seg -range 0x00010000 -offset 0x43C00000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs stream_fifo/S_AXI/Mem0] SEG_axi_fifo_mm_s_0_Mem0
+  create_bd_addr_seg -range 0x00010000 -offset 0x43C10000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs stream_fifo/S_AXI_FULL/Mem1] SEG_axi_fifo_mm_s_0_Mem1
   create_bd_addr_seg -range 0x10000000 -offset 0x70000000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs status_register/s_axi/reg0] SEG_axi_sts_register_0_reg0
   create_bd_addr_seg -range 0x08000000 -offset 0x48000000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs counter_register/s_axi/reg0] SEG_axi_sts_register_0_reg01
+  create_bd_addr_seg -range 0x04000000 -offset 0x64000000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs autozero_register/s_axi/reg0] SEG_axi_sts_register_0_reg02
   create_bd_addr_seg -range 0x00010000 -offset 0x42000000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs command_register/s_axi/reg0] SEG_command_register_reg0
   create_bd_addr_seg -range 0x00010000 -offset 0x60000000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs decimator_register/s_axi/reg0] SEG_decimator_reg0
   create_bd_addr_seg -range 0x00010000 -offset 0x44000000 [get_bd_addr_spaces red_pitaya_ps/Data] [get_bd_addr_segs mode_register/s_axi/reg0] SEG_mode_register_reg0

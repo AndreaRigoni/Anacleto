@@ -1,5 +1,4 @@
-$$SET_DEVICE_FIFO_MODE$$
-$$SET_DEVICE_DMA_MODE$$
+
 
 #include <linux/module.h>
 #include <linux/version.h>
@@ -36,6 +35,7 @@ $$SET_DEVICE_DMA_MODE$$
 #define SUCCESS 0
 #define FIFO_LEN 16384
 
+#define DMA_STREAMING_SAMPLES 1024
 //static struct platform_device *s_pdev = 0;
 // static int s_device_open = 0;
 static int device_open(struct inode *, struct file *);
@@ -60,8 +60,7 @@ static struct file_operations fops = {
     .poll = device_poll,
 };
 
-#define MAX_DMA_BUFFERS 80
-#define DMA_BUFSIZE 1600000
+#define BUFSIZE 65536
 
 struct $$DEVICE_NAME_L$$_dev {
     struct platform_device *pdev;
@@ -73,29 +72,20 @@ struct $$DEVICE_NAME_L$$_dev {
     
     struct semaphore sem;     /* mutual exclusion semaphore     */
     spinlock_t spinLock;     /* spinlock     */
-    spinlock_t checkSpinLock;/* spinlock for FIFO check   */
     u32 *fifoBuffer;
     u32 bufSize;
     u32 rIdx, wIdx, bufCount;
     wait_queue_head_t readq;  /* read queue */
     int dma_started;
-    int started;
+    int dma_cyclic;
 #ifdef HAS_DMA
-    int dma_align;
     struct dma_chan *dma_chan;
-    dma_addr_t dma_handles[MAX_DMA_BUFFERS];
-    char *dma_buffers[MAX_DMA_BUFFERS];
-    u32 dma_buf_sizes[MAX_DMA_BUFFERS];
-    u32 num_dma_buffers;
-    u32 dma_tot_size;
-    u32 dma_allocated;
-    struct scatterlist dma_sg[MAX_DMA_BUFFERS];
+    dma_addr_t dma_handle;
+    dma_addr_t rx_dma_handle;
+    char *dma_buffer;
+    u32 dma_buf_size;
     dma_cookie_t dma_cookie;
     struct completion dma_cmp;
-#endif
-#ifdef HAS_FIFO_INTERRUPT
-    int fifoHalfInterrupt;
-    int fifoOverflow;
 #endif
 
 };
@@ -125,9 +115,9 @@ static void clearFifo(void *dev, void *dev1)
 
 
 #ifdef HAS_DMA
-static dma_cookie_t dma_prep_buffer(struct rfx_recorder_dev *dev, struct dma_chan *chan, dma_addr_t *handles, size_t *lens, 
-                                    struct scatterlist *sg, u32 num_dma_buffers, enum dma_transfer_direction dir) ;
-static void dma_start_transfer(struct dma_chan *chan, struct completion *cmp, dma_cookie_t cookie);
+static dma_cookie_t dma_prep_buffer(struct $$DEVICE_NAME_L$$_dev *dev, struct dma_chan *chan, dma_addr_t buf, size_t len, 
+					enum dma_transfer_direction dir, struct completion *cmp);
+static void dma_start_transfer(struct dma_chan *chan, struct completion *cmp, dma_cookie_t cookie, int wait);
 #endif //HAS_DMA
 
 int writeBuf(struct $$DEVICE_NAME_L$$_dev *dev, u32 sample)
@@ -149,13 +139,13 @@ int writeBuf(struct $$DEVICE_NAME_L$$_dev *dev, u32 sample)
     return 0;
 } 
 
-int writeBufSet(struct $$DEVICE_NAME_L$$_dev *dev, u32 *buf, int nSamples, int check)
+int writeBufSet(struct $$DEVICE_NAME_L$$_dev *dev, u32 *buf, int nSamples)
 {
     int i;
     spin_lock_irq(&dev->spinLock);
     for(i = 0; i < nSamples; i++)
     {
-      if(check && (dev->bufCount >= dev->bufSize))
+      if(dev->bufCount >= dev->bufSize)
 	{
 	    printk(KERN_DEBUG "ADC FIFO BUFFER OVERFLOW  %d    %d!\n", dev->bufCount, dev->bufSize);
 	    spin_unlock_irq(&dev->spinLock);
@@ -198,36 +188,53 @@ u32 readBuf(struct $$DEVICE_NAME_L$$_dev *dev)
 //  DMA Management  /////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-
 #ifdef HAS_DMA
+static void dma_buffer2fifo_buffer(struct $$DEVICE_NAME_L$$_dev *dev)
+{
+    int i;
+    int dmaSamples = dev->dma_buf_size/sizeof(u32);
+    writeBufSet(dev, dev->dma_buffer, dmaSamples);
+    wake_up(&dev->readq);
+}
 
-/* Handle a callback called when the DMA transfer is complete 
-*/
-static int dma_sync_callback(struct rfx_recorder_dev *dev)
+/* Handle a callback called when the DMA transfer is complete to another
+ * thread of control
+ */
+static int dma_sync_callback(struct $$DEVICE_NAME_L$$_dev *dev)
 {
     int status, i;
-    struct task_struct *ts;
     dma_cookie_t lastCookie;
-    printk("DMA SYNC CALLBACK %d \n", dev->num_dma_buffers);
-
+//    printk("DMA SYNC CALLBACK\n");
     status = dma_async_is_tx_complete(dev->dma_chan,  dev->dma_cookie, &lastCookie, NULL); 
     if (status != DMA_COMPLETE) {
-                        printk(KERN_ERR "DMA returned completion callback status of: %s\n",
-                               status == DMA_ERROR ? "error" : "in progress"); }
+			printk(KERN_ERR "DMA returned completion callback status of: %s\n",
+			       status == DMA_ERROR ? "error" : "in progress"); }
     if(lastCookie != dev->dma_cookie)
     {
-        printk("DMA NOT TERMINATED FOR THIS COOKIE %d  %d\n", lastCookie, dev->dma_cookie);
-        dmaengine_terminate_all(dev->dma_chan);
-        return 0;
+	printk("DMA NOT TERMINATED FOR THIS COOKIE %d  %d\n", lastCookie, dev->dma_cookie);
+	dmaengine_terminate_all(dev->dma_chan);
+//	return 0;
     }
-     //Start a new DMA round if device still armed
-    printk("STATUS REGISTER: %d\n", *((u32 *)dev->iomap_status_register));
-    if(*((u32 *)dev->iomap_status_register) == 0) //Always is!!
+    else
     {
-        dev->dma_started = 0;
-        printk("DMA TERMINATED\n");
-        return 0;
+#ifdef DMA_SOURCE    
+         dma_buffer2fifo_buffer(dev);
+#endif
     }
+    //Start a new DMA round if device still armed
+//    if(!dev->dma_started)
+    if(!dev->dma_cyclic)
+        return 0;
+    for(i = 0; i < dev->dma_buf_size/sizeof(u32); i++)
+      ((u32 *)dev->dma_buffer)[i] = 0xffffffff;
+ 
+    dev->dma_cookie = dma_prep_buffer(dev, dev->dma_chan, dev->dma_handle, dev->dma_buf_size, DMA_DEV_TO_MEM,  &dev->dma_cmp);
+    if (dma_submit_error(dev->dma_cookie)) {
+	printk(KERN_ERR "dma_prep_buffer error\n");
+	return -EIO;
+    }
+//    printk(KERN_INFO "Starting NEW DMA transfers\n");
+    dma_start_transfer(dev->dma_chan, &dev->dma_cmp, dev->dma_cookie, 0);
     return 0;
 }
 
@@ -235,147 +242,55 @@ static int dma_sync_callback(struct rfx_recorder_dev *dev)
  * to queued and return a cookie that can be used to track that status of the 
  * transaction
  */
-static dma_cookie_t dma_prep_buffer(struct rfx_recorder_dev *dev, struct dma_chan *chan, dma_addr_t *handles, size_t *lens, 
-                                    struct scatterlist *sg, u32 num_dma_buffers, enum dma_transfer_direction dir) 
+static dma_cookie_t dma_prep_buffer(struct $$DEVICE_NAME_L$$_dev *dev, struct dma_chan *chan, dma_addr_t buf, size_t len, 
+					enum dma_transfer_direction dir, struct completion *cmp) 
 {
-    int i;
-    //enum dma_ctrl_flags flags = DMA_CTRL_ACK |  DMA_PREP_INTERRUPT;
-    enum dma_ctrl_flags flags = DMA_CTRL_ACK;// |  DMA_PREP_INTERRUPT;
-    struct dma_async_tx_descriptor *chan_desc;
-    dma_cookie_t cookie;
-    set_user_nice(current, 10);
-    sg_init_table(sg, num_dma_buffers);
-    for(i = 0; i < num_dma_buffers; i++)
-    {
-        sg_dma_address(&sg[i]) = handles[i];
-        sg_dma_len(&sg[i]) = lens[i];
-    }
-//    chan_desc = dev->dma_chan->device->device_prep_slave_sg(chan, sg, num_dma_buffers, dir, flags, NULL);
-    chan_desc = dmaengine_prep_slave_sg(chan, sg, num_dma_buffers, dir, flags);
-    if (!chan_desc) 
-    {
-        printk(KERN_ERR "dmaengine_prep_slave_single error\n");
-        cookie = -EBUSY;
-    } else 
-    {
-        //chan_desc->callback = dma_sync_callback;
-        //chan_desc->callback_param = dev;
-        cookie = dmaengine_submit(chan_desc);  
-        printk("SUBMIT DMA  cookie: %x\n", cookie);
-    }
-    return cookie;
+	enum dma_ctrl_flags flags = /*DMA_CTRL_ACK | */ DMA_PREP_INTERRUPT;
+	struct dma_async_tx_descriptor *chan_desc;
+	dma_cookie_t cookie;
+
+	chan_desc = dmaengine_prep_slave_single(chan, buf, len, dir, flags);
+	if (!chan_desc) {
+		printk(KERN_ERR "dmaengine_prep_slave_single error\n");
+		cookie = -EBUSY;
+	} else {
+		chan_desc->callback = dma_sync_callback;
+		chan_desc->callback_param = dev;
+//		printk("SUBMIT DMA \n");
+		cookie = dmaengine_submit(chan_desc);	
+//		printk("SUBMIT DMA  cookie: %x\n", cookie);
+	}
+	return cookie;
 }
 
 /* Start a DMA transfer that was previously submitted to the DMA engine and then
  * wait for it complete, timeout or have an error
  */
 static void dma_start_transfer(struct dma_chan *chan, struct completion *cmp, 
-                                        dma_cookie_t cookie)
+					dma_cookie_t cookie, int wait)
 {
-        unsigned long timeout = msecs_to_jiffies(10000);
-        enum dma_status status;
+	unsigned long timeout = msecs_to_jiffies(10000);
+	enum dma_status status;
 
-        init_completion(cmp);
-        dma_async_issue_pending(chan);
+	init_completion(cmp);
+	dma_async_issue_pending(chan);
     
+	if (wait) 
+	{
+		timeout = wait_for_completion_timeout(cmp, timeout);
+		status = dma_async_is_tx_complete(chan, cookie, NULL, NULL);
+		if (timeout == 0)  
+		{
+		    printk(KERN_ERR "DMA timed out\n");
+		} 
+		else if (status != DMA_COMPLETE) 
+		{
+		    printk(KERN_ERR "DMA returned completion callback status of: %s\n",
+		    status == DMA_ERROR ? "error" : "in progress");
+		}
+	}
 }
 #endif  //HAS_DMA
-
-#ifdef HAS_FIFO_INTERRUPT
-////////////////////////////////////////////////////////////////////////////////
-//  Interrupt Management for FIFO //////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-static void Write(void *addr, enum AxiStreamFifo_Register op, u32 data ) {
-    *(u32 *)(addr+op) = data;
-}
-
-static u32 Read(void *addr, enum AxiStreamFifo_Register op ) {
-    return *(u32 *)(addr+op);
-}
-
-
-#ifdef HAS_FIFO_INTERRUPT
-
-static int checkFifo(struct $$DEVICE_NAME_L$$_dev *dev)
-{
-    void* fifo  = dev->iomap_$$SYNCH_FIFO$$;
-    void* fifo1 = dev->iomap1_$$SYNCH_FIFO$$;
-
-    spin_lock_irq(&dev->checkSpinLock);
-    u32 occ = Read(fifo,RDFO);
-    int i;
-    for(i = 0; i < occ; i++)
-    {
-        u32 currSample = Read(fifo1,RDFD4);
-        if(writeBuf(dev, currSample) < 0) //In case of ADC FIFO overflow, abort data readout from FPGA
-        {
-          dev->fifoOverflow = 1;
-          spin_unlock_irq(&dev->checkSpinLock);
-          return 0;
-        }
-     }
-    spin_unlock_irq(&dev->checkSpinLock);
-    return occ;
-}
-
-#endif
-
-
-// interrupt handler //
-irqreturn_t IRQ_cb(int irq, void *dev_id, struct pt_regs *regs) {
-    struct $$DEVICE_NAME_L$$_dev *dev =  dev_id;
-    //struct rpadc_fifo_dev *rpadc = dev_id;
-    static int isFirst = 1;
-    //Check whether he cause of interrupt has been reveive overrun
-    Write(dev->iomap_$$SYNCH_FIFO$$,ISR,0xFFFFFFFF);
-    Write(dev->iomap_$$SYNCH_FIFO$$,IER,0x00000000);
-
-    void* fifo  = dev->iomap_$$SYNCH_FIFO$$;
-    void* fifo1 = dev->iomap1_$$SYNCH_FIFO$$;
-
-    static u32 prev1, prev2;
-
-    u32 occ = Read(fifo,RDFO);
-    {
-        isFirst = 0;
-    }
-
-//printk("--INTERRUPT: Available samples: %d\n", occ);    
-    
-    
-    if(occ >= FIFO_LEN)
-    {
-        dev->fifoOverflow = 1;
-        wake_up(&dev->readq);
-        //When oveflow is detected, disable interrupts
-    }
-
-    int i;
-    for(i = 0; i < occ; i++)
-    {
-        u32 currSample = Read(fifo1,RDFD4);
-        if(writeBuf(dev, currSample) < 0) //In case of ADC FIFO overflow, abort data readout from FPGA
-	{
-	  Write(dev->iomap_$$SYNCH_FIFO$$,IER,0x00000000);
-	  return IRQ_HANDLED;
-	}
-     }
-    wake_up(&dev->readq);
-
-    if(dev->fifoHalfInterrupt)
-        Write(dev->iomap_$$SYNCH_FIFO$$,IER,0x00100000);
-    else
-        Write(dev->iomap_$$SYNCH_FIFO$$,IER,0x04000000);
-
-//printk("--INTERRUPT: Done\n");    
-    return IRQ_HANDLED;
-}
-
-
-#endif //HAS_FIFO_INTERRUPT
-
-
-
 
 // OPEN //
 static int device_open(struct inode *inode, struct file *file)
@@ -395,19 +310,16 @@ static int device_open(struct inode *inode, struct file *file)
         privateInfo->bufCount = 0;
 	if(privateInfo->bufSize > 0)
 	     kfree(privateInfo->fifoBuffer);
-	privateInfo->bufSize = FIFO_LEN;
+	privateInfo->bufSize = BUFSIZE;
 	privateInfo->fifoBuffer = (u32 *)kmalloc(privateInfo->bufSize * sizeof(u32), GFP_KERNEL);
 	privateInfo->dma_started = 0;
-#ifdef HAS_FIFO_INTERRUPT
-	privateInfo->fifoOverflow = 0;
-	privateInfo->fifoHalfInterrupt = 0;
-#endif
+	privateInfo->dma_cyclic = 0;
     }
     struct $$DEVICE_NAME_L$$_dev *privateInfo = (struct $$DEVICE_NAME_L$$_dev *)file->private_data;
     if(!privateInfo) return -EFAULT;
     else if (privateInfo->busy) return -EBUSY;
     else privateInfo->busy++;
-    privateInfo->started = 0;
+    
     return capable(CAP_SYS_RAWIO) ? 0 : -EPERM;
 }
 
@@ -433,20 +345,16 @@ static ssize_t device_read(struct file *filp, char *buffer, size_t length,
     u32 i = 0;
     struct $$DEVICE_NAME_L$$_dev *dev = (struct $$DEVICE_NAME_L$$_dev *)filp->private_data;
     u32 *b32 = (u32*)buffer;
-#ifdef HAS_FIFO_INTERRUPT
-    if(dev->fifoOverflow)
-        return -1;
-    checkFifo(dev);
-#endif
+
     while(dev->bufCount == 0)
     {
         if(filp->f_flags & O_NONBLOCK)
             return -EAGAIN;
-        if(wait_event_interruptible(dev->readq, (dev->bufCount > 0 || dev->started == 0)))
-	    return -ERESTARTSYS;
-	if(!dev->started)
-	    return 0;
-   }
+        if(wait_event_interruptible(dev->readq, dev->bufCount > 0))
+            return -ERESTARTSYS;
+//	if(!dev->dma_started)
+//	    return 0;
+    }
 
     u32 occ = dev->bufCount;
     for(i=0; i < min(length/sizeof(u32), occ); ++i) {
@@ -493,107 +401,86 @@ static long device_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 #ifdef HAS_DMA
     case $$DEVICE_NAME_U$$_ARM_DMA:
       {
-        if(!dev->dma_allocated)
-        {
-            int i;
-            dma_addr_t currHandle;
-            for(i = 0; i < dev->num_dma_buffers; i++)
-            {
-   printk("ALLOC COHERENT %d\n", dev->dma_buf_sizes[i]);
-               dev->dma_buffers[i] = dma_alloc_coherent(dev->dma_chan->device->dev,dev->dma_buf_sizes[i],&dev->dma_handles[i],GFP_KERNEL);
-   printk("ALLOCATED COHERENT %p\n", dev->dma_buffers[i]);
-   printk("MAPPED %d\n", dev->dma_handles[i]);
-            }
-            dev->dma_allocated = 1;
-        }
-        return 0;
+	u32 newDmaBufSize;
+	if(!arg)
+	{
+	  if(dev->dma_buf_size > 0)
+	    newDmaBufSize = dev->dma_buf_size;
+	  else
+	    newDmaBufSize = DMA_STREAMING_SAMPLES * sizeof(u32);
+	}
+	else
+	{  
+	    copy_from_user (&newDmaBufSize, (void __user *)arg, sizeof(u32));
+	}
+ 	if(dev->dma_buf_size > 0 && dev->dma_buf_size  != newDmaBufSize)
+	{
+	   dma_free_coherent(dev->dma_chan->device->dev,dev->dma_buf_size,dev->dma_buffer,dev->dma_handle);
+	}
+	if(newDmaBufSize != dev->dma_buf_size)
+	{
+	    dev->dma_buf_size = newDmaBufSize;
+	    dev->dma_buffer = dma_alloc_coherent(dev->dma_chan->device->dev,dev->dma_buf_size,&dev->dma_handle,GFP_KERNEL);
+	}
+	for(i = 0; i < 300; i++)  //Just test
+	  ((u32 *)dev->dma_buffer)[i] = 0xFFFFFFFF;
+	
+//	printk("DMA BUFFER ADDRESS: %x\n", dev->dma_buffer);
+	dev->rx_dma_handle = dma_map_single(dev->dma_chan->device->dev, dev->dma_buffer, dev->dma_buf_size, DMA_FROM_DEVICE);	
+	return 0;
       }
       case $$DEVICE_NAME_U$$_START_DMA:
       {
 //Start DMA if DMA buffer previusly allocated
-        if(!dev->dma_allocated)
-            return -1;
-        for(i = 0; i < dev->num_dma_buffers; i++)
-        {
-            memset(dev->dma_buffers[i], 0, dev->dma_buf_sizes[i]);
-        }
-        dev->dma_cookie = dma_prep_buffer(dev, dev->dma_chan, dev->dma_handles, dev->dma_buf_sizes, dev->dma_sg, 
-                                          dev->num_dma_buffers, DMA_DEV_TO_MEM);
-        if (dma_submit_error(dev->dma_cookie) ) {
-            printk(KERN_ERR "dma_prep_buffer error\n");
-            return -EIO;
-        }
-        printk(KERN_INFO "Starting DMA transfers. num dma buffers %d\n", dev->num_dma_buffers);
-        dma_start_transfer(dev->dma_chan, &dev->dma_cmp, dev->dma_cookie);
-        dev->dma_started = 1;
-        return 0;
+	if(dev->dma_buf_size > 0)
+	{
+	    dev->dma_cookie = dma_prep_buffer(dev, dev->dma_chan, dev->dma_handle, dev->dma_buf_size, DMA_DEV_TO_MEM,  &dev->dma_cmp);
+	    if (dma_submit_error(dev->dma_cookie) ) {
+		printk(KERN_ERR "dma_prep_buffer error\n");
+		return -EIO;
+	    }
+	  //  printk(KERN_INFO "Starting DMA transfers. DMA Buf size = %d\n", dev->dma_buf_size);
+            dma_start_transfer(dev->dma_chan, &dev->dma_cmp, dev->dma_cookie, 0);
+	    dev->dma_started = 1;
+	    if(arg)
+	        dev->dma_cyclic = 1;
+	    else
+		dev->dma_cyclic = 0;
+	}
+	dev->wIdx = 0;
+        dev->rIdx = 0;
+        dev->bufCount = 0;
+	return 0;
       }
       case $$DEVICE_NAME_U$$_STOP_DMA:
       {
-          int status = dma_async_is_tx_complete(dev->dma_chan, dev->dma_cookie,
-                                                        NULL, NULL);
-          if(status != DMA_COMPLETE)
-           printk("DMA ENGINE NOT STOPPED!!!!!!\n");
-          dmaengine_terminate_all(dev->dma_chan);
-          dev->dma_started = 0;
-          return 0;
+	  dmaengine_terminate_all(dev->dma_chan);
+	  dev->dma_started = 0;
+	  dev->dma_cyclic = 0;
+	  wake_up(&dev->readq);
+	  return 0;
       }
-      case $$DEVICE_NAME_U$$_IS_DMA_RUNNING:
+      case $$DEVICE_NAME_U$$_DMA_RUNNING:
       {
-          copy_to_user ((void __user *)arg, &dev->dma_started, sizeof(u32));    
-          return 0;
+	  copy_to_user ((void __user *)arg, &dev->dma_started, sizeof(u32));	
+	  return 0;
       }
       case $$DEVICE_NAME_U$$_GET_DMA_BUFLEN:
       {
-          copy_to_user ((void __user *)arg, &dev->dma_tot_size, sizeof(u32));   
+          copy_to_user ((void __user *)arg, &dev->dma_buf_size, sizeof(u32));   
           return 0;
       }
       case $$DEVICE_NAME_U$$_SET_DMA_BUFLEN:
       {
-          u32 numDmaBuffers;
-          u32 dmaBuflen;
-          int i;
-          copy_from_user (&dmaBuflen, (void __user *)arg, sizeof(u32)); 
-          if(dmaBuflen <= 0 || dmaBuflen > MAX_DMA_BUFFERS * DMA_BUFSIZE)
-              return -1;
-          if(dev->dma_tot_size != dmaBuflen)
-          {
-              if(dev->dma_allocated > 0)
-              {
-                  for(i = 0; i < dev->num_dma_buffers; i++)
-                  {
-                      dma_free_coherent(dev->dma_chan->device->dev,dev->dma_buf_sizes[i],dev->dma_buffers[i],dev->dma_handles[i]);
-                  }
-                  dev->dma_allocated = 0;
-              }
-          }
-          dev->num_dma_buffers = dmaBuflen / DMA_BUFSIZE;
-          for(i = 0; i < dev->num_dma_buffers; i++)
-              dev->dma_buf_sizes[i] = DMA_BUFSIZE;
-          if(dmaBuflen % DMA_BUFSIZE)
-          {
-              dev->dma_buf_sizes[dev->num_dma_buffers] = dmaBuflen % DMA_BUFSIZE;
-              dev->num_dma_buffers++;
-              printk("LAST DMA SIZE: %d\n", dmaBuflen % DMA_BUFSIZE);
-          }
-          dev->dma_tot_size = dmaBuflen;
-          printk("NUM DMA BUFFERS: %d\n", dev->num_dma_buffers);
+          copy_from_user (&dev->dma_buf_size, (void __user *)arg, sizeof(u32));   
           return 0;
       }
       case $$DEVICE_NAME_U$$_GET_DMA_DATA:
       {
-          int i;
-          if(!dev->dma_allocated)
-              return -1;
-          char *currPtr = (void __user *)arg;
-          for(i = 0; i < dev->num_dma_buffers; i++)
-          {
-              printk("COPYING %d  %d\n", i,  dev->dma_buf_sizes[i]);
-              copy_to_user ((void __user *)currPtr, dev->dma_buffers[i], dev->dma_buf_sizes[i]);
-              currPtr += dev->dma_buf_sizes[i];
-          }
-          return 0;
+	  copy_from_user ((void __user *)arg, dev->dma_buffer, dev->dma_buf_size);	
+	  return 0;
       }
+
 #endif //HAS_DMA      
       
       case $$DEVICE_NAME_U$$_SET_DRIVER_BUFLEN:
@@ -616,30 +503,6 @@ static long device_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
       }
       
     $$MAP_IOCTL$$
- 
- #ifdef HAS_FIFO_INTERRUPT
- 
-     case $$DEVICE_NAME_U$$_FIFO_INT_HALF_SIZE:
-        dev->fifoHalfInterrupt = 1;
-        Write(dev->iomap_$$SYNCH_FIFO$$,IER,0x00100000);
-        return 0;
-    case $$DEVICE_NAME_U$$_FIFO_INT_FIRST_SAMPLE:
-        dev->fifoHalfInterrupt = 0;
-        Write(dev->iomap_$$SYNCH_FIFO$$,IER,0x04000000);
-        return 0;
-    case $$DEVICE_NAME_U$$_FIFO_FLUSH:
-	  IRQ_cb(0, dev, 0);
-      //  Write(dev->iomap_$$SYNCH_FIFO$$,IER,0x04000000);
-    case $$DEVICE_NAME_U$$_START_READ:
-	  dev->started = 1;
-        return 0;
-    case $$DEVICE_NAME_U$$_STOP_READ:
-	  dev->started = 0;
-	  IRQ_cb(0, dev, 0);
-        return 0;
-
- 
- #endif
  
     default:
         return -EAGAIN;
@@ -672,25 +535,6 @@ static unsigned int device_poll(struct file *file, struct poll_table_struct *p)
 static int id_major;
 static struct class *$$DEVICE_NAME_L$$_class;
 static struct $$DEVICE_NAME_L$$_dev staticPrivateInfo;
-
-#ifdef HAS_FIFO_INTERRUPT
-static void setIrq(struct platform_device *pdev)
-{
-     staticPrivateInfo.irq = platform_get_irq(pdev,0);
-     printk(KERN_DEBUG "IRQ: %x\n",staticPrivateInfo.irq);
-     int res = request_irq(staticPrivateInfo.irq, IRQ_cb, IRQF_TRIGGER_RISING ,"$$DEVICE_NAME_L$$",&staticPrivateInfo);
-     if(res) 
-	printk(KERN_INFO "$$DEVICE_NAME_L$$: can't get IRQ %d assigned\n",staticPrivateInfo.irq);
-     else 
-	printk(KERN_INFO "$$DEVICE_NAME_L$$: got IRQ %d assigned\n",staticPrivateInfo.irq);
-}
-#endif
-
-
-
-
-
-
 static int $$DEVICE_NAME_L$$_probe(struct platform_device *pdev)
 {
     int i;
@@ -745,32 +589,27 @@ static int $$DEVICE_NAME_L$$_probe(struct platform_device *pdev)
       // Initialize semaphores and queues
       sema_init(&staticPrivateInfo.sem, 1);
       spin_lock_init(&staticPrivateInfo.spinLock);
-      spin_lock_init(&staticPrivateInfo.checkSpinLock);
       init_waitqueue_head(&staticPrivateInfo.readq);
       staticPrivateInfo.bufCount = 0;
       staticPrivateInfo.rIdx = 0;
       staticPrivateInfo.wIdx = 0;
       staticPrivateInfo.bufSize = 0;
-#ifdef HAS_DMA      
-      staticPrivateInfo.dma_tot_size = 0;
-      staticPrivateInfo.dma_allocated = 0;
+      staticPrivateInfo.dma_buf_size = 0;
       staticPrivateInfo.dma_chan = NULL;
+#ifdef HAS_DMA      
       //Declare DMA Channel
-      printk("REQUEST DMA\n");
       staticPrivateInfo.dma_chan = dma_request_slave_channel(&pdev->dev, "dma0");
       if (IS_ERR(staticPrivateInfo.dma_chan)) {
 	  pr_err("xilinx_dmatest: No Tx channel\n");
 	  dma_release_channel(staticPrivateInfo.dma_chan);
 	  return -EFAULT;
       }
-      printk("GOT DMA %p\n", staticPrivateInfo.dma_chan);
 #endif //HAS_DMA
-      $$MAP_FIRST_REGISTER$$
 
     }
     else //Further calls for memory resources
     {
-      printk("FOLLOWING CALL TO rfx_$$DEVICE_NAME_L$$_probe: %s, memIdx: %d\n", pdev->name, memIdx);	
+//      printk("SUCCESSIVA CHIAMATA A rfx_$$DEVICE_NAME_L$$_probe: %s, memIdx: %d\n", pdev->name, memIdx);	
 //      r_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 //      off = r_mem->start & ~PAGE_MASK;
        switch(memIdx) {
@@ -778,12 +617,12 @@ static int $$DEVICE_NAME_L$$_probe(struct platform_device *pdev)
 	 $$MAP_REGISTERS$$
 
 	 default: printk("ERROR: Unexpected $$DEVICE_NAME_L$$_probe call\n");
-        } 
+      }
+      memIdx++;
+      printk(KERN_DEBUG"mem start: %x\n",r_mem->start);
+      printk(KERN_DEBUG"mem end: %x\n",r_mem->end);
+      printk(KERN_DEBUG"mem offset: %x\n",r_mem->start & ~PAGE_MASK);
     }
-    memIdx++;
-    printk(KERN_DEBUG"mem start: %x\n",r_mem->start);
-    printk(KERN_DEBUG"mem end: %x\n",r_mem->end);
-    printk(KERN_DEBUG"mem offset: %x\n",r_mem->start & ~PAGE_MASK);
     return 0;
 }
 
@@ -794,8 +633,8 @@ static int $$DEVICE_NAME_L$$_remove(struct platform_device *pdev)
         device_destroy($$DEVICE_NAME_L$$_class,MKDEV(id_major, 0));
         class_destroy($$DEVICE_NAME_L$$_class);
     }
-#ifdef HAS_DMA    
     printk("PLATFORM DEVICE REMOVE dma_release_channel...%x  \n",staticPrivateInfo.dma_chan);
+#ifdef HAS_DMA    
     if(staticPrivateInfo.dma_chan)
         dma_release_channel(staticPrivateInfo.dma_chan);
 #endif //HAS_DMA
@@ -806,7 +645,6 @@ static int $$DEVICE_NAME_L$$_remove(struct platform_device *pdev)
 static const struct of_device_id $$DEVICE_NAME_L$$_of_ids[] = {
 { .compatible = "xlnx,axi-dma-test-1.00.a",},
 { .compatible = "xlnx,axi-cfg-register-1.0",},
-{ .compatible = "xlnx,axi-sts-register-1.0",},
 { .compatible = "xlnx,axi-fifo-mm-s-4.1",},
 {}
 };
