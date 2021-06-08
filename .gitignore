@@ -23,10 +23,15 @@ vivado_project/
 .hw/
 .xpr
 
+/toolchain
+/fpga/device-tree-xlnx-*
+/lib/modules
+*.o
+projects/**/.Xil
+projects/**/*.cmd
+projects/**/*.mod
+
 /downloads
 /home/mdsplus/devel/anacleto/toolchain
 /linux
-toolchain
-lib
-uImage
-fpga/device-tree-xlnx-2017.4
+
