@@ -35,5 +35,19 @@ AX_CONFIG_FILES(
  rfx_spdgauss/Makefile
  rfx_spdgauss/linux/src/Makefile
 
+
+ rfx_recorder/Makefile
+ rfx_recorder/linux/src/Makefile
+ rfx_recorder/linux/src/Kbuild
+
+ rfx_stream/Makefile
+ rfx_stream/linux/src/Makefile
+ rfx_stream/linux/src/Kbuild
+
+ rfx_dac/Makefile
+ rfx_dac/linux/src/Makefile
+ rfx_dac/linux/src/Kbuild
+
+
 )
 

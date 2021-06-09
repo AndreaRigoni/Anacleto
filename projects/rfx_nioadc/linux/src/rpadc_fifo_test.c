@@ -118,14 +118,13 @@ int main(int argc, char **argv) {
     printf("reg: %p  dec: %d\n",dec_reg,dec_reg->dec);
 */
 
-     printf("aperto \n");
-
+     printf("aperto CICCIO\n");
      
     status = ioctl(fd, RFX_RPADC_STOP, 0);
     sleep(1);
      
-    inConfig.mode = EVENT_STREAMING;
-//    inConfig.mode = STREAMING;
+//    inConfig.mode = EVENT_STREAMING;
+    inConfig.mode = STREAMING;
     inConfig.trig_samples = 2;
     inConfig.trig_above_threshold = 1;
     inConfig.trig_from_chana = 1;

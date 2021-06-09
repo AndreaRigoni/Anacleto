@@ -63,7 +63,7 @@ conf/autoconf-doxygen/m4/ax_prog_doxygen.m4
 .vscode/launch.json
 .vscode/settings.json
 
-<<<<<<< HEAD
+
 /autoscan.log
 /autoscan-*.log
 /compile
@@ -81,20 +81,21 @@ vivado_project/
 .hw/
 .xpr
 
+/toolchain
+/fpga/device-tree-xlnx-*
+/lib/modules
+*.o
+projects/**/.Xil
+projects/**/*.cmd
+projects/**/*.mod
 
-/home/andrea/devel/rfx/anacleto/build/download
-/home/andrea/devel/rfx/anacleto/build/toolchain
+
 /linux
 conf/m4/libtool.m4
 conf/m4/lt~obsolete.m4
 conf/m4/ltoptions.m4
 conf/m4/ltsugar.m4
 conf/m4/ltversion.m4
-=======
+
 /downloads
-/.
-/build/**
-/conf/python
-/conf/ide
-/src/.deps
->>>>>>> bootstrap/master
+
