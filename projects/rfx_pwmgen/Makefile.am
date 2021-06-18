@@ -28,6 +28,8 @@ pwmgen_SOURCES = src/test_script.tcl \
 
 pwmgen_IP_SOURCES = rfx_pwm_1.0
 
+pwmgen_BD_SOURCES = prj/red_pitaya/rfx_pwmgen_1.0.srcs/sources_1/bd/red_pitaya/red_pitaya.bd_2018.1.tcl
+
 # pwmgen_PRJCFG = gen_script.tcl
 
 yocto-%: DOCKER_CONTAINER = yocto-build

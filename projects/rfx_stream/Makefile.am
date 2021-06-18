@@ -20,6 +20,9 @@ stream_SOURCES = red_pitaya.xdc \
 		 src/resampler.vhdl \
 		 src/timing_highway.vhdl
 
+# stream_BD_SOURCES = prj/red_pitaya/rfx_stream_0.1.srcs/sources_1/bd/red_pitaya_ps_1/red_pitaya_ps_1.bd_2017.4.tcl
+
+
 stream_10_SOURCES = red_pitaya_10.xdc \
                  src/trarec.vhdl \
                  src/trarec_tb.vhdl \

@@ -47,7 +47,7 @@ proc  getenv { name {default ""}} {
   variable ::env
   if { [info exists env($name)] } {
     return $env($name)
-  } else {    
+  } else {
     return $default
   }
 }
@@ -130,6 +130,7 @@ proc reset_project_env { } {
   set project_env(IPCFG)           [getenv IPCFG]
   set project_env(BD_SOURCES)      [getenv BD_SOURCES]
   set project_env(IP_SOURCES)      [getenv IP_SOURCES]
+  set project_env(TB_SOURCES)      [getenv TB_SOURCES]
   set project_env(COMPILE_ORDER)   [getenv COMPILE_ORDER]
   set project_env(sources_list)    [split [getenv SOURCES] " "]
 }
@@ -201,8 +202,8 @@ namespace upvar ::tclapp::socdev::makeutils core_env    core_env
     "$project_env(dir_prj)/rfx_stream_0.1.srcs/sources_1/bd/red_pitaya_ps_1/hdl/red_pitaya_ps_1_wrapper.v"
  set files [list \
   "[file normalize $make_env(srcdir)/src/timing_highway.vhdl]"\
-  "[file normalize $make_env(srcdir)/src/trarec.vhdl]"\
   "[file normalize $make_env(srcdir)/src/resampler.vhdl]"\
+  "[file normalize $make_env(srcdir)/src/trarec.vhdl]"\
   "[file normalize $project_env(dir_prj)/rfx_stream_0.1.srcs/sources_1/bd/red_pitaya_ps_1/red_pitaya_ps_1.bd]"\
   "[file normalize $project_env(dir_prj)/rfx_stream_0.1.srcs/sources_1/bd/red_pitaya_ps_1/hdl/red_pitaya_ps_1_wrapper.v]"\
   "[file normalize $make_env(srcdir)/src/trarec_tb.vhdl]"\
@@ -222,8 +223,8 @@ namespace upvar ::tclapp::socdev::makeutils core_env    core_env
   set_property -quiet "used_in_simulation" "1" $file_obj
   set_property -quiet "used_in_synthesis" "1" $file_obj
  # 
- # Properties for trarec.vhdl
-  set file "$project_env(dir_src)/../../src/trarec.vhdl"
+ # Properties for resampler.vhdl
+  set file "$project_env(dir_src)/../../src/resampler.vhdl"
   set file [file normalize $file]
   set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
   set_property -quiet "file_type" "VHDL" $file_obj
@@ -235,8 +236,8 @@ namespace upvar ::tclapp::socdev::makeutils core_env    core_env
   set_property -quiet "used_in_simulation" "1" $file_obj
   set_property -quiet "used_in_synthesis" "1" $file_obj
  # 
- # Properties for resampler.vhdl
-  set file "$project_env(dir_src)/../../src/resampler.vhdl"
+ # Properties for trarec.vhdl
+  set file "$project_env(dir_src)/../../src/trarec.vhdl"
   set file [file normalize $file]
   set file_obj [get_files -of_objects [get_filesets sources_1] [list "$file"]]
   set_property -quiet "file_type" "VHDL" $file_obj
@@ -276,6 +277,7 @@ namespace upvar ::tclapp::socdev::makeutils core_env    core_env
   set_property -quiet "library" "xil_defaultlib" $file_obj
   set_property -quiet "path_mode" "RelativeFirst" $file_obj
   set_property -quiet "pfm_name" "" $file_obj
+  set_property -quiet "registered_with_manager" "1" $file_obj
   if { ![get_property "is_locked" $file_obj] } {
     set_property -quiet "synth_checkpoint_mode" "None" $file_obj
   }

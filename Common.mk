@@ -74,14 +74,14 @@ LINUX_PACKAGE   ?= uImage
 LINUX_IMAGE     ?= $(TMP)/$(LINUX_PACKAGE)
 LINUX_DIR       ?= linux
 
-if LINUX_DIR_IN_SRCTREE
- LINUX_SRCDIR    = $(abs_top_srcdir)/$(LINUX_DIR)
- LINUX_BUILDDIR  = $(abs_top_builddir)/$(LINUX_DIR)
- LINUX_BUILD_O   = $(filter-out $(LINUX_SRCDIR),$(LINUX_BUILDDIR))
-else
- LINUX_SRCDIR    = $(abs_top_builddir)/$(LINUX_DIR)
- LINUX_BUILDDIR  = $(abs_top_builddir)/$(LINUX_DIR)
-endif
+# if LINUX_DIR_IN_SRCTREE
+#  LINUX_SRCDIR    = $(abs_top_srcdir)/$(LINUX_DIR)
+#  LINUX_BUILDDIR  = $(abs_top_builddir)/$(LINUX_DIR)
+#  LINUX_BUILD_O   = $(filter-out $(LINUX_SRCDIR),$(LINUX_BUILDDIR))
+# else
+#  LINUX_SRCDIR    = $(abs_top_builddir)/$(LINUX_DIR)
+#  LINUX_BUILDDIR  = $(abs_top_builddir)/$(LINUX_DIR)
+# endif
 
 ARCH                    ?= arm
 WITH_TOOLCHAIN_DIR      ?= ${abs_top_builddir}/toolchain
