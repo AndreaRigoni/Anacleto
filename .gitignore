@@ -99,3 +99,7 @@ conf/m4/ltversion.m4
 
 /downloads
 
+/build/**
+/conf/python
+/conf/ide
+/src/.deps
